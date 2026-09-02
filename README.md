@@ -21,7 +21,9 @@ Build the application with:
 
 ```powershell
 dotnet build .\RipperWorks.sln -c Release
-Nexus Mods integration
+```
+
+## Nexus Mods integration
 
 RipperWorks includes Nexus Mods integration for metadata, requirements/dependencies, update checking, NXM handling, and user-initiated download workflows.
 
@@ -29,6 +31,6 @@ Authentication and download integration is currently undergoing Nexus Mods API/O
 
 No public binary release is currently distributed through this repository.
 
-License
+## License
 
 No open-source license has been granted at this time.
