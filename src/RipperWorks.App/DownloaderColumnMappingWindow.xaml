@@ -1,0 +1,102 @@
+<Window x:Class="RipperWorks.App.DownloaderColumnMappingWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding Title}"
+        Width="880"
+        Height="680"
+        MinWidth="720"
+        MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        Style="{StaticResource {x:Type Window}}">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <StackPanel Margin="0,0,0,12">
+            <TextBlock Text="{Binding SheetTitle}"
+                       Style="{StaticResource PageTitleStyle}" />
+            <TextBlock Margin="0,5,0,0"
+                       Text="{Binding Hint}"
+                       TextWrapping="Wrap"
+                       Style="{StaticResource SecondaryTextStyle}" />
+        </StackPanel>
+        <DataGrid Grid.Row="1"
+                  ItemsSource="{Binding Rows}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  SelectionUnit="FullRow">
+            <DataGrid.Columns>
+                <DataGridTextColumn Binding="{Binding Header}"
+                                    IsReadOnly="True"
+                                    Width="250">
+                    <DataGridTextColumn.Header>
+                        <TextBlock Text="{Binding DataContext.SourceColumnLabel,
+                                                 RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                    </DataGridTextColumn.Header>
+                </DataGridTextColumn>
+                <DataGridTemplateColumn Width="280">
+                    <DataGridTemplateColumn.Header>
+                        <TextBlock Text="{Binding DataContext.ExampleLabel,
+                                                 RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                    </DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Example}"
+                                       ToolTip="{Binding ExamplesToolTip}"
+                                       TextTrimming="CharacterEllipsis" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Width="250">
+                    <DataGridTemplateColumn.Header>
+                        <TextBlock Text="{Binding DataContext.ApplicationFieldLabel,
+                                                 RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                    </DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ComboBox ItemsSource="{Binding Fields}"
+                                      DisplayMemberPath="Display"
+                                      SelectedValuePath="Value"
+                                      SelectedValue="{Binding SelectedField,
+                                                              Mode=TwoWay,
+                                                              UpdateSourceTrigger=PropertyChanged}"
+                                      SelectionChanged="Mapping_OnSelectionChanged" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        <Grid Grid.Row="2" Margin="0,14,0,0">
+            <StackPanel>
+                <WrapPanel>
+                    <Button Margin="4"
+                            Content="{Binding AutoMapLabel}"
+                            Click="AutoMapButton_OnClick" />
+                    <Button Margin="4"
+                            Content="{Binding ResetLabel}"
+                            Click="ResetButton_OnClick" />
+                </WrapPanel>
+                <TextBlock Margin="4,6,0,0"
+                           Foreground="{DynamicResource WarningBrush}"
+                           Text="{Binding ValidationMessage}" />
+            </StackPanel>
+            <WrapPanel HorizontalAlignment="Right"
+                       VerticalAlignment="Bottom">
+                <Button Margin="4"
+                        MinWidth="100"
+                        Content="{Binding CancelLabel}"
+                        IsCancel="True" />
+                <Button Margin="4"
+                        MinWidth="110"
+                        Content="{Binding ApplyLabel}"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        IsDefault="True"
+                        IsEnabled="{Binding CanApply}"
+                        Click="ApplyButton_OnClick" />
+            </WrapPanel>
+        </Grid>
+    </Grid>
+</Window>

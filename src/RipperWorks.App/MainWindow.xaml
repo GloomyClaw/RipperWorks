@@ -1,0 +1,849 @@
+<Window x:Class="RipperWorks.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:RipperWorks.App.Views"
+        Title="RipperWorks"
+        Width="1280"
+        Height="760"
+        MinWidth="820"
+        MinHeight="460"
+        Style="{StaticResource {x:Type Window}}"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <DataTemplate x:Key="ChoiceItemTemplate">
+            <TextBlock Text="{Binding Display}" />
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid Background="{DynamicResource WindowBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border x:Name="TopShell"
+                Grid.Row="0"
+                Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource DividerBrush}"
+                BorderThickness="0,0,0,1">
+            <Grid Margin="12,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0"
+                            Width="140"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="RipperWorks"
+                               FontSize="21"
+                               FontWeight="Bold" />
+                    <TextBlock Text="Cyberpunk 2077"
+                               Margin="0,2,0,0"
+                               FontSize="11"
+                               Style="{StaticResource SecondaryTextStyle}" />
+                </StackPanel>
+
+                <ListBox x:Name="NavigationList"
+                         Grid.Column="1"
+                         ItemsSource="{Binding Navigation}"
+                         SelectedItem="{Binding SelectedNavigation}"
+                         PreviewMouseLeftButtonDown="NavigationList_OnPreviewMouseLeftButtonDown"
+                         Background="{DynamicResource TransparentBrush}"
+                         BorderThickness="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                         ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemContainerStyle>
+                        <StaticResource ResourceKey="TopNavigationItemStyle" />
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Title}"
+                                       FontSize="13" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </Border>
+
+        <!-- Stage 2.1 legacy library layout retained only as commented
+             migration context; it is not instantiated in the visual tree.
+        <Grid x:Name="LibraryPanel"
+              Grid.Row="1"
+              Margin="28,24,28,22"
+              Visibility="{Binding IsLibraryVisible,
+                                   Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel>
+                    <TextBlock Text="{Binding Library.Header}"
+                               Style="{StaticResource PageTitleStyle}" />
+                    <TextBlock Text="{Binding Library.Subtitle}"
+                               Margin="0,5,0,0"
+                               FontSize="14"
+                               Style="{StaticResource SecondaryTextStyle}" />
+                </StackPanel>
+                <Border Grid.Column="1"
+                        Padding="14,8"
+                        VerticalAlignment="Center"
+                        Background="{DynamicResource SurfaceAltBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="16">
+                    <TextBlock x:Name="HeaderPackageCount"
+                               Text="{Binding Library.PackageCount}"
+                               FontWeight="SemiBold" />
+                </Border>
+            </Grid>
+
+            <StackPanel Grid.Row="1"
+                        Margin="0,0,0,12">
+                <WrapPanel>
+                    <TextBox x:Name="LibrarySearchBox"
+                             Width="180"
+                             Margin="0,0,10,8"
+                             Tag="{Binding Library.SearchPlaceholder}"
+                             Text="{Binding Library.SearchText,
+                                            UpdateSourceTrigger=PropertyChanged}" />
+                    <ComboBox x:Name="FilterComboBox"
+                              Width="110"
+                              Margin="0,0,10,8"
+                              SelectedValuePath="Tag"
+                              SelectedIndex="0"
+                              SelectedValue="{Binding Library.SelectedFilter}">
+                        <ComboBoxItem Tag="All"
+                                      Content="{Binding DataContext.Library.FilterAllDisplay,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
+                        <ComboBoxItem Tag="Nexus"
+                                      Content="{Binding DataContext.Library.FilterNexusDisplay,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
+                        <ComboBoxItem Tag="Local"
+                                      Content="{Binding DataContext.Library.FilterLocalDisplay,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
+                        <ComboBoxItem Tag="WithMetadata"
+                                      Content="{Binding DataContext.Library.FilterWithMetadataDisplay,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
+                        <ComboBoxItem Tag="WithoutMetadata"
+                                      Content="{Binding DataContext.Library.FilterWithoutMetadataDisplay,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
+                    </ComboBox>
+                    <ComboBox x:Name="AnalysisFilterComboBox"
+                              Width="145"
+                              Margin="0,0,10,8"
+                              ItemsSource="{Binding Library.AnalysisFilterChoices}"
+                              ItemTemplate="{StaticResource ChoiceItemTemplate}"
+                              SelectedItem="{Binding Library.SelectedAnalysisFilterChoice}" />
+                    <ComboBox x:Name="GroupFilterComboBox"
+                              Width="115"
+                              Margin="0,0,10,8"
+                              ItemsSource="{Binding Library.GroupFilterChoices}"
+                              ItemTemplate="{StaticResource ChoiceItemTemplate}"
+                              SelectedItem="{Binding Library.SelectedGroupFilterChoice}" />
+                    <Button x:Name="RefreshLibraryButton"
+                            MinWidth="160"
+                            Margin="0,0,0,8"
+                            Content="{Binding Library.RefreshLabel}"
+                            Command="{Binding Library.RefreshCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}" />
+                </WrapPanel>
+            </StackPanel>
+
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="320" />
+                </Grid.ColumnDefinitions>
+
+                <DataGrid x:Name="LibraryGrid"
+                      Grid.Column="0"
+                      ItemsSource="{Binding Library.PackagesView}"
+                      SelectedItem="{Binding Library.SelectedPackage}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      AlternationCount="2"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto">
+                <DataGrid.Resources>
+                    <Style x:Key="TrimmedCellTextStyle"
+                           TargetType="TextBlock">
+                        <Setter Property="TextTrimming"
+                                Value="CharacterEllipsis" />
+                    </Style>
+                    <Style x:Key="PathCellTextStyle"
+                           TargetType="TextBlock"
+                           BasedOn="{StaticResource TrimmedCellTextStyle}">
+                        <Setter Property="ToolTip"
+                                Value="{Binding ArchivePath}" />
+                    </Style>
+                    <Style TargetType="DataGridRow"
+                           BasedOn="{StaticResource {x:Type DataGridRow}}">
+                        <Setter Property="ContextMenu">
+                            <Setter.Value>
+                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                                   RelativeSource={RelativeSource Self}}">
+                                    <MenuItem Header="{Binding OpenCardLabel}"
+                                              Command="{Binding OpenCardCommand}" />
+                                    <Separator />
+                                    <MenuItem Header="{Binding AnalyzeLabel}"
+                                              Command="{Binding AnalyzeCommand}" />
+                                    <MenuItem Header="{Binding ReanalyzeLabel}"
+                                              Command="{Binding ReanalyzeCommand}" />
+                                    <Separator />
+                                    <MenuItem Header="{Binding AssignGroupLabel}"
+                                              ItemsSource="{Binding GroupAssignments}">
+                                        <MenuItem.ItemContainerStyle>
+                                            <Style TargetType="MenuItem"
+                                                   BasedOn="{StaticResource {x:Type MenuItem}}">
+                                                <Setter Property="Header"
+                                                        Value="{Binding Name}" />
+                                                <Setter Property="Command"
+                                                        Value="{Binding AssignCommand}" />
+                                            </Style>
+                                        </MenuItem.ItemContainerStyle>
+                                    </MenuItem>
+                                    <MenuItem Header="{Binding OpenFolderLabel}"
+                                              Command="{Binding OpenFolderCommand}" />
+                                    <MenuItem Header="{Binding OpenNexusLabel}"
+                                              Command="{Binding OpenNexusCommand}" />
+                                    <MenuItem Header="{Binding CopyPathLabel}"
+                                              Command="{Binding CopyPathCommand}" />
+                                </ContextMenu>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.ContainerStyle>
+                            <Style TargetType="GroupItem">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="GroupItem">
+                                            <Expander IsExpanded="{Binding Name.IsExpanded,
+                                                                           Mode=TwoWay}">
+                                                <Expander.Header>
+                                                    <Border Padding="8,6"
+                                                            Background="{DynamicResource SurfaceAltBrush}">
+                                                        <TextBlock FontWeight="SemiBold">
+                                                            <TextBlock.Text>
+                                                                <MultiBinding StringFormat="{}{0} — {1}">
+                                                                    <Binding Path="Name.Name" />
+                                                                    <Binding Path="ItemCount" />
+                                                                </MultiBinding>
+                                                            </TextBlock.Text>
+                                                            <TextBlock.ContextMenu>
+                                                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                                                                   RelativeSource={RelativeSource Self}}">
+                                                                    <MenuItem Header="{Binding Name.RenameLabel}"
+                                                                              Command="{Binding Name.ManageCommand}" />
+                                                                    <MenuItem Header="{Binding Name.AnalyzeLabel}"
+                                                                              Command="{Binding Name.AnalyzeCommand}" />
+                                                                    <MenuItem Header="{Binding Name.ExpandLabel}"
+                                                                              Command="{Binding Name.ExpandCommand}" />
+                                                                    <MenuItem Header="{Binding Name.CollapseLabel}"
+                                                                              Command="{Binding Name.CollapseCommand}" />
+                                                                    <Separator />
+                                                                    <MenuItem Header="{Binding Name.MoveUpLabel}"
+                                                                              Command="{Binding Name.MoveUpCommand}" />
+                                                                    <MenuItem Header="{Binding Name.MoveDownLabel}"
+                                                                              Command="{Binding Name.MoveDownCommand}" />
+                                                                    <MenuItem Header="{Binding Name.DeleteLabel}"
+                                                                              Command="{Binding Name.DeleteCommand}" />
+                                                                </ContextMenu>
+                                                            </TextBlock.ContextMenu>
+                                                        </TextBlock>
+                                                    </Border>
+                                                </Expander.Header>
+                                                <ItemsPresenter />
+                                            </Expander>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </GroupStyle.ContainerStyle>
+                    </GroupStyle>
+                </DataGrid.GroupStyle>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Binding="{Binding DisplayName}"
+                                        ElementStyle="{StaticResource TrimmedCellTextStyle}"
+                                        MinWidth="210"
+                                        Width="2*">
+                        <DataGridTextColumn.Header>
+                            <TextBlock Text="{Binding DataContext.Library.ColumnName,
+                                                     RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Binding="{Binding Source}"
+                                        MinWidth="100"
+                                        Width="110">
+                        <DataGridTextColumn.Header>
+                            <TextBlock Text="{Binding DataContext.Library.ColumnSource,
+                                                     RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Binding="{Binding Version}"
+                                        MinWidth="90"
+                                        Width="100">
+                        <DataGridTextColumn.Header>
+                            <TextBlock Text="{Binding DataContext.Library.ColumnVersion,
+                                                     RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Binding="{Binding AnalysisStateDisplay}"
+                                        MinWidth="120"
+                                        Width="145">
+                        <DataGridTextColumn.Header>
+                            <TextBlock Text="{Binding DataContext.Library.AnalysisLabel,
+                                                     RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                    <DataGridTemplateColumn MinWidth="92"
+                                            Width="105">
+                        <DataGridTemplateColumn.Header>
+                            <TextBlock Text="{Binding DataContext.Library.ColumnInstalled,
+                                                     RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding InstallationIndicator}"
+                                               ToolTip="{Binding InstallationToolTip}"
+                                               FontWeight="SemiBold" />
+                                    <TextBlock Margin="7,0,0,0"
+                                               Text="{Binding DependencyWarningIndicator}"
+                                               ToolTip="{Binding DependencyWarningToolTip}"
+                                               Foreground="{DynamicResource ConflictBrush}"
+                                               FontWeight="SemiBold" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Binding="{Binding ArchiveFormat}"
+                                        MinWidth="80"
+                                        Width="88">
+                        <DataGridTextColumn.Header>
+                            <TextBlock Text="{Binding DataContext.Library.ColumnFormat,
+                                                     RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Binding="{Binding Size}"
+                                        MinWidth="90"
+                                        Width="100">
+                        <DataGridTextColumn.Header>
+                            <TextBlock Text="{Binding DataContext.Library.ColumnSize,
+                                                     RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Binding="{Binding ArchivePath}"
+                                        ElementStyle="{StaticResource PathCellTextStyle}"
+                                        MinWidth="260"
+                                        Width="3*">
+                        <DataGridTextColumn.Header>
+                            <TextBlock Text="{Binding DataContext.Library.ColumnPath,
+                                                     RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                        </DataGridTextColumn.Header>
+                    </DataGridTextColumn>
+                </DataGrid.Columns>
+                </DataGrid>
+
+                <ScrollViewer Grid.Column="2"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <Border Style="{StaticResource CardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Library.PackageDetailsLabel}"
+                                           Margin="0,0,0,14"
+                                           Style="{StaticResource SectionTitleStyle}" />
+                                <TextBlock Text="{Binding Library.DisplayNameLabel}"
+                                           Style="{StaticResource FieldLabelStyle}" />
+                                <TextBox Text="{Binding Library.SelectedPackage.EditDisplayName,
+                                                        UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Margin="0,12,0,0"
+                                           Text="{Binding Library.VersionLabel}"
+                                           Style="{StaticResource FieldLabelStyle}" />
+                                <TextBox Text="{Binding Library.SelectedPackage.EditVersion,
+                                                        UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Margin="0,12,0,0"
+                                           Text="{Binding Library.GroupLabel}"
+                                           Style="{StaticResource FieldLabelStyle}" />
+                                <ComboBox ItemsSource="{Binding Library.SelectedPackage.AvailableGroups}"
+                                          DisplayMemberPath="Name"
+                                          SelectedItem="{Binding Library.SelectedPackage.Group}" />
+                                <TextBlock Margin="0,12,0,0"
+                                           Text="{Binding Library.NoteLabel}"
+                                           Style="{StaticResource FieldLabelStyle}" />
+                                <TextBox MinHeight="64"
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         VerticalContentAlignment="Top"
+                                         Text="{Binding Library.SelectedPackage.Note,
+                                                        UpdateSourceTrigger=PropertyChanged}" />
+                                <Button Margin="0,12,0,0"
+                                        Content="{Binding Library.SaveLabel}"
+                                        Command="{Binding Library.SelectedPackage.SaveCommand}"
+                                        Style="{StaticResource PrimaryButtonStyle}" />
+
+                                <Border Margin="0,16,0,12"
+                                        BorderBrush="{DynamicResource DividerBrush}"
+                                        BorderThickness="0,1,0,0" />
+                                <TextBlock Text="{Binding Library.PathLabel}"
+                                           Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock Margin="0,3,0,10"
+                                           Text="{Binding Library.SelectedPackage.ArchivePath}"
+                                           TextWrapping="Wrap"
+                                           Style="{StaticResource SecondaryTextStyle}" />
+                                <TextBlock Text="{Binding Library.SourceLabel}"
+                                           Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock Margin="0,3,0,10"
+                                           Text="{Binding Library.SelectedPackage.Source}" />
+                                <TextBlock Text="{Binding Library.AuthorLabel}"
+                                           Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock Margin="0,3,0,10"
+                                           Text="{Binding Library.SelectedPackage.Author}" />
+                                <TextBlock Text="{Binding Library.CategoryLabel}"
+                                           Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock Margin="0,3,0,10"
+                                           Text="{Binding Library.SelectedPackage.Category}" />
+                                <TextBlock Text="{Binding Library.NexusModIdLabel}"
+                                           Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock Margin="0,3,0,10"
+                                           Text="{Binding Library.SelectedPackage.NexusModId}" />
+                                <TextBlock Text="{Binding Library.NexusFileIdLabel}"
+                                           Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock Margin="0,3,0,10"
+                                           Text="{Binding Library.SelectedPackage.NexusFileId}" />
+                                <TextBlock Text="{Binding Library.NexusUrlLabel}"
+                                           Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock Margin="0,3,0,10"
+                                           Text="{Binding Library.SelectedPackage.NexusUrl}"
+                                           TextWrapping="Wrap" />
+                                <WrapPanel>
+                                    <StackPanel Width="90">
+                                        <TextBlock Text="{Binding Library.SizeLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBlock Margin="0,3,0,10"
+                                                   Text="{Binding Library.SelectedPackage.Size}" />
+                                    </StackPanel>
+                                    <StackPanel Width="80">
+                                        <TextBlock Text="{Binding Library.FormatLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBlock Margin="0,3,0,10"
+                                                   Text="{Binding Library.SelectedPackage.ArchiveFormat}" />
+                                    </StackPanel>
+                                </WrapPanel>
+                                <TextBlock Text="{Binding Library.ModifiedLabel}"
+                                           Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock Margin="0,3,0,10"
+                                           Text="{Binding Library.SelectedPackage.Modified}" />
+                                <TextBlock Text="{Binding Library.AnalysisLabel}"
+                                           Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock Margin="0,4,0,0"
+                                           Text="{Binding Library.SelectedPackage.AnalysisStateDisplay}"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Margin="0,4,0,0"
+                                           Text="{Binding Library.SelectedPackage.AnalysisMessage}"
+                                           TextWrapping="Wrap"
+                                           Style="{StaticResource SecondaryTextStyle}" />
+                                <ItemsControl Margin="0,8,0,0"
+                                              ItemsSource="{Binding Library.SelectedPackage.RootChoices}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <RadioButton Margin="0,3"
+                                                         GroupName="ArchiveRootChoice"
+                                                         Content="{Binding Root}"
+                                                         IsChecked="{Binding IsSelected,
+                                                                             Mode=OneWay}"
+                                                         Command="{Binding SelectCommand}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <WrapPanel Margin="0,10,0,0">
+                                    <Button Margin="0,0,8,8"
+                                            Content="{Binding Library.AnalyzeSelectedLabel}"
+                                            Command="{Binding Library.SelectedPackage.AnalyzeCommand}" />
+                                    <Button Margin="0,0,0,8"
+                                            Content="{Binding Library.ReanalyzeLabel}"
+                                            Command="{Binding Library.SelectedPackage.ReanalyzeCommand}" />
+                                </WrapPanel>
+                                <Button Margin="0,0,0,8"
+                                        Content="{Binding Library.AnalyzeGroupLabel}"
+                                        Command="{Binding Library.AnalyzeGroupCommand}" />
+                                <Button Margin="0,0,0,8"
+                                        Content="{Binding Library.AnalyzeAllLabel}"
+                                        Command="{Binding Library.AnalyzeAllCommand}" />
+                                <Button Margin="0,0,0,8"
+                                        Content="{Binding Library.CancelLabel}"
+                                        Command="{Binding Library.CancelAnalysisCommand}" />
+                                <TextBlock Margin="0,0,0,8"
+                                           Text="{Binding Library.AnalysisProgressText}"
+                                           Style="{StaticResource SecondaryTextStyle}" />
+                                <WrapPanel>
+                                    <Button Margin="0,0,8,0"
+                                            Content="{Binding Library.OpenFolderLabel}"
+                                            Command="{Binding Library.SelectedPackage.OpenFolderCommand}" />
+                                    <Button Content="{Binding Library.OpenNexusLabel}"
+                                            Command="{Binding Library.SelectedPackage.OpenNexusCommand}" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Margin="0,12,0,0"
+                                Style="{StaticResource CardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding Library.GroupLabel}"
+                                           Margin="0,0,0,12"
+                                           Style="{StaticResource SectionTitleStyle}" />
+                                <ComboBox ItemsSource="{Binding Library.Groups}"
+                                          DisplayMemberPath="Name"
+                                          SelectedItem="{Binding Library.SelectedGroup}" />
+                                <TextBox Margin="0,8,0,0"
+                                         Text="{Binding Library.NewGroupName,
+                                                        UpdateSourceTrigger=PropertyChanged}" />
+                                <WrapPanel Margin="0,8,0,0">
+                                    <Button Margin="0,0,6,6"
+                                            Content="{Binding Library.CreateGroupLabel}"
+                                            Command="{Binding Library.CreateGroupCommand}" />
+                                    <Button Margin="0,0,6,6"
+                                            Content="{Binding Library.RenameGroupLabel}"
+                                            Command="{Binding Library.RenameGroupCommand}" />
+                                    <Button Margin="0,0,0,6"
+                                            Content="{Binding Library.DeleteGroupLabel}"
+                                            Command="{Binding Library.DeleteGroupCommand}" />
+                                </WrapPanel>
+                                <WrapPanel>
+                                    <Button Margin="0,0,6,0"
+                                            Content="{Binding Library.MoveUpLabel}"
+                                            Command="{Binding Library.MoveGroupUpCommand}" />
+                                    <Button Content="{Binding Library.MoveDownLabel}"
+                                            Command="{Binding Library.MoveGroupDownCommand}" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+
+            <Border x:Name="LibraryFooter"
+                    Grid.Row="3"
+                    Margin="0,12,0,0"
+                    Padding="0,10,0,0"
+                    BorderBrush="{DynamicResource DividerBrush}"
+                    BorderThickness="0,1,0,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="28" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="28" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding Library.FoundPackagesSummary}"
+                               Style="{StaticResource SecondaryTextStyle}" />
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding Library.SkippedFoldersSummary}"
+                               Style="{StaticResource SecondaryTextStyle}" />
+                    <TextBlock Grid.Column="4"
+                               Text="{Binding Library.LastUpdatedSummary}"
+                               Style="{StaticResource SecondaryTextStyle}" />
+                    <TextBlock Grid.Column="5"
+                               Margin="20,0,0,0"
+                               HorizontalAlignment="Right"
+                               Text="{Binding Library.StatusMessage}"
+                               TextTrimming="CharacterEllipsis"
+                               Style="{StaticResource SecondaryTextStyle}" />
+                </Grid>
+            </Border>
+        </Grid>
+        -->
+
+        <Grid x:Name="DownloadsPanel"
+              Grid.Row="1"
+              Visibility="{Binding IsDownloadsVisible,
+                                   Converter={StaticResource BooleanToVisibilityConverter}}">
+            <views:DownloadsView DataContext="{Binding Downloads}" />
+        </Grid>
+
+        <Grid x:Name="LibraryPanel"
+              Grid.Row="1"
+              Visibility="{Binding IsLibraryVisible,
+                                   Converter={StaticResource BooleanToVisibilityConverter}}">
+            <views:LibraryView DataContext="{Binding Library}" />
+        </Grid>
+
+        <Grid x:Name="NexusPanel"
+              Grid.Row="1"
+              Visibility="{Binding IsNexusVisible,
+                                   Converter={StaticResource BooleanToVisibilityConverter}}">
+            <views:NexusBrowserView x:Name="NexusBrowser"
+                                    DataContext="{Binding NexusBrowser}" />
+        </Grid>
+
+        <Grid x:Name="DiagnosticsPanel"
+              Grid.Row="1"
+              Visibility="{Binding IsDiagnosticsVisible,
+                                   Converter={StaticResource BooleanToVisibilityConverter}}">
+            <views:DiagnosticsView DataContext="{Binding Diagnostics}" />
+        </Grid>
+
+        <ScrollViewer x:Name="SettingsPanel"
+                      Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      HorizontalContentAlignment="Stretch"
+                      Visibility="{Binding IsSettingsVisible,
+                                           Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid Margin="28,24,28,30"
+                  MaxWidth="1440"
+                  HorizontalAlignment="Stretch">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock Text="{Binding Settings.Header}"
+                           Style="{StaticResource PageTitleStyle}" />
+
+                <Grid x:Name="SettingsCardsGrid"
+                      Grid.Row="1"
+                      Margin="0,20,0,18"
+                      SizeChanged="SettingsCardsGrid_OnSizeChanged">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="24" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel x:Name="SettingsLeftColumn">
+                    <Border x:Name="PathsCard"
+                            Margin="0,0,0,16"
+                            Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding Settings.PathsSectionLabel}"
+                                       Margin="0,0,0,18"
+                                       Style="{StaticResource SectionTitleStyle}" />
+
+                            <TextBlock Text="{Binding Settings.GameFolderLabel}"
+                                       Style="{StaticResource FieldLabelStyle}" />
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="132" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="GamePathTextBox"
+                                         Text="{Binding Settings.Cyberpunk2077Root,
+                                                        UpdateSourceTrigger=PropertyChanged}" />
+                                <Button Grid.Column="2"
+                                        Content="{Binding Settings.BrowseLabel}"
+                                        Command="{Binding Settings.BrowseGameCommand}" />
+                            </Grid>
+                            <TextBlock Margin="0,0,0,10"
+                                       Text="{Binding Settings.GameValidationShortStatus}"
+                                       Style="{StaticResource SecondaryTextStyle}" />
+
+                            <Border Visibility="{Binding Settings.IsForeignModsWarningVisible,
+                                                         Converter={StaticResource BooleanToVisibilityConverter}}"
+                                    Margin="0,0,0,16"
+                                    Padding="12,10"
+                                    Background="{DynamicResource SurfaceAltBrush}"
+                                    BorderBrush="{DynamicResource WarningBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="6">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Settings.ForeignModsWarningHeading}"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource WarningBrush}" />
+                                    <TextBlock Text="{Binding Settings.ForeignModsWarningMessage}"
+                                               Margin="0,4,0,8"
+                                               TextWrapping="Wrap"
+                                               Style="{StaticResource SecondaryTextStyle}" />
+                                    <Button Content="{Binding Settings.GoToDiagnosticsLabel}"
+                                            HorizontalAlignment="Left"
+                                            Command="{Binding Settings.NavigateToDiagnosticsCommand}" />
+                                </StackPanel>
+                            </Border>
+
+                            <TextBlock Text="{Binding Settings.LibraryFolderLabel}"
+                                       Style="{StaticResource FieldLabelStyle}" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="132" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="LibraryPathTextBox"
+                                         Text="{Binding Settings.LibraryRoot,
+                                                        UpdateSourceTrigger=PropertyChanged}" />
+                                <Button Grid.Column="2"
+                                        Content="{Binding Settings.BrowseLabel}"
+                                        Command="{Binding Settings.BrowseLibraryCommand}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="InterfaceCard"
+                            Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding Settings.InterfaceSectionLabel}"
+                                       Margin="0,0,0,18"
+                                       Style="{StaticResource SectionTitleStyle}" />
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel Width="220">
+                                    <TextBlock Text="{Binding Settings.LanguageLabel}"
+                                               Style="{StaticResource FieldLabelStyle}" />
+                                    <ComboBox x:Name="LanguageComboBox"
+                                              ItemsSource="{Binding Settings.LanguageChoices}"
+                                              DisplayMemberPath="Display"
+                                              SelectedValuePath="Value"
+                                              SelectedValue="{Binding Settings.SelectedLanguage}" />
+                                </StackPanel>
+                                <StackPanel Width="220"
+                                            Margin="20,0,0,0">
+                                    <TextBlock Text="{Binding Settings.ThemeLabel}"
+                                               Style="{StaticResource FieldLabelStyle}" />
+                                    <ComboBox x:Name="ThemeComboBox"
+                                              ItemsSource="{Binding Settings.ThemeChoices}"
+                                              DisplayMemberPath="Display"
+                                              SelectedValuePath="Value"
+                                              SelectedValue="{Binding Settings.SelectedTheme}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <StackPanel Margin="0,20,0,0"
+                                Orientation="Horizontal">
+                        <Button x:Name="SaveSettingsButton"
+                                MinWidth="150"
+                                Content="{Binding Settings.SaveLabel}"
+                                Command="{Binding Settings.SaveCommand}"
+                                Style="{StaticResource PrimaryButtonStyle}" />
+                        <TextBlock Margin="16,0,0,0"
+                                   MaxWidth="420"
+                                   VerticalAlignment="Center"
+                                   Text="{Binding Settings.StatusMessage}"
+                                   TextWrapping="Wrap"
+                                   Style="{StaticResource SecondaryTextStyle}" />
+                    </StackPanel>
+                    </StackPanel>
+
+                    <Border x:Name="NexusCard"
+                            Grid.Column="2"
+                            Style="{StaticResource CardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="{Binding Settings.NexusSectionLabel}"
+                                       Margin="0,0,0,18"
+                                       Style="{StaticResource SectionTitleStyle}" />
+                            <TextBlock Text="{Binding Settings.NexusApiKeyLabel}"
+                                       Style="{StaticResource FieldLabelStyle}" />
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="180" />
+                                </Grid.ColumnDefinitions>
+                                <PasswordBox x:Name="NexusApiKeyBox"
+                                             PasswordChanged="NexusApiKeyBox_OnPasswordChanged" />
+                                <Button Grid.Column="2"
+                                        Content="{Binding Settings.ValidateNexusApiKeyLabel}"
+                                        Command="{Binding Settings.ValidateNexusApiKeyCommand}" />
+                            </Grid>
+                            <TextBlock Text="{Binding Settings.DownloaderTempFolderLabel}"
+                                       Style="{StaticResource FieldLabelStyle}" />
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="132" />
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding Settings.DownloaderTempRoot,
+                                                        UpdateSourceTrigger=PropertyChanged}" />
+                                <Button Grid.Column="2"
+                                        Content="{Binding Settings.BrowseLabel}"
+                                        Command="{Binding Settings.BrowseDownloaderTempCommand}" />
+                            </Grid>
+                            <TextBlock Text="{Binding Settings.ConcurrentDownloadsLabel}"
+                                       Style="{StaticResource FieldLabelStyle}" />
+                            <TextBox Width="100"
+                                     Margin="0,0,0,14"
+                                     HorizontalAlignment="Left"
+                                     Text="{Binding Settings.ConcurrentDownloads,
+                                                    UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="{Binding Settings.NexusBrowserLabel}"
+                                       Style="{StaticResource FieldLabelStyle}" />
+                             <ComboBox Width="260"
+                                       Margin="0,0,0,14"
+                                       HorizontalAlignment="Left"
+                                      ItemsSource="{Binding Settings.NexusBrowserChoices}"
+                                      DisplayMemberPath="Display"
+                                       SelectedValuePath="Value"
+                                       SelectedValue="{Binding Settings.SelectedNexusBrowserMode}" />
+                            <TextBlock Text="{Binding Settings.NxmHandlerLabel}"
+                                       Style="{StaticResource FieldLabelStyle}" />
+                            <WrapPanel>
+                                <Button Margin="0,0,8,0"
+                                        Content="{Binding Settings.RegisterNxmLabel}"
+                                        Command="{Binding Settings.RegisterNxmCommand}" />
+                                <Button Margin="0,0,8,0"
+                                        Content="{Binding Settings.UnregisterNxmLabel}"
+                                        Command="{Binding Settings.UnregisterNxmCommand}" />
+                                <TextBlock Text="{Binding Settings.NxmRegistrationStatus}"
+                                           Style="{StaticResource SecondaryTextStyle}" />
+                            </WrapPanel>
+                            <TextBlock Margin="0,12,0,0"
+                                       Text="{Binding Settings.NexusStatus}"
+                                       TextWrapping="Wrap"
+                                       Style="{StaticResource SecondaryTextStyle}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+            </Grid>
+        </ScrollViewer>
+
+        <Grid x:Name="PlaceholderPanel"
+              Grid.Row="1"
+              Visibility="{Binding IsPlaceholderVisible,
+                                   Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Border MaxWidth="650"
+                    Margin="28"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource CardStyle}">
+                <StackPanel>
+                    <TextBlock Text="{Binding SelectedTitle}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               Style="{StaticResource PageTitleStyle}" />
+                    <TextBlock Text="{Binding Placeholder}"
+                               Margin="0,12,0,0"
+                               FontSize="15"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"
+                               Style="{StaticResource SecondaryTextStyle}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

@@ -1,0 +1,1359 @@
+<Window x:Class="RipperWorks.App.ModDetailsWindow"
+        x:Name="ModDetailsRoot"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding WindowTitle}"
+        Width="1220"
+        Height="800"
+        MinWidth="1100"
+        MinHeight="700"
+        Style="{StaticResource {x:Type Window}}"
+        ResizeMode="CanResize"
+        SizeToContent="Manual"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Loaded="Window_OnLoaded"
+        Closed="Window_OnClosed">
+    <Window.Resources>
+        <Style x:Key="ToneTextStyle"
+               TargetType="TextBlock">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="FontWeight"
+                    Value="SemiBold" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Tone}"
+                             Value="Success">
+                    <Setter Property="Foreground"
+                            Value="{DynamicResource SuccessBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}"
+                             Value="Warning">
+                    <Setter Property="Foreground"
+                            Value="{DynamicResource WarningBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}"
+                             Value="Conflict">
+                    <Setter Property="Foreground"
+                            Value="{DynamicResource ConflictBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}"
+                             Value="Error">
+                    <Setter Property="Foreground"
+                            Value="{DynamicResource ErrorBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="StatusBadgeStyle"
+               TargetType="Border">
+            <Setter Property="Padding"
+                    Value="13,7" />
+            <Setter Property="CornerRadius"
+                    Value="14" />
+            <Setter Property="Background"
+                    Value="{DynamicResource SurfaceAltBrush}" />
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness"
+                    Value="1" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding StatusTone}"
+                             Value="Success">
+                    <Setter Property="BorderBrush"
+                            Value="{DynamicResource SuccessBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding StatusTone}"
+                             Value="Warning">
+                    <Setter Property="BorderBrush"
+                            Value="{DynamicResource WarningBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding StatusTone}"
+                             Value="Error">
+                    <Setter Property="BorderBrush"
+                            Value="{DynamicResource ErrorBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="SummaryCardStyle"
+               TargetType="Border"
+               BasedOn="{StaticResource CardStyle}">
+            <Setter Property="Margin"
+                    Value="0,0,10,0" />
+            <Setter Property="Padding"
+                    Value="14,11" />
+        </Style>
+        <Style x:Key="ModDetailsSectionTitleStyle"
+               TargetType="TextBlock"
+               BasedOn="{StaticResource SectionTitleStyle}">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+        <Style x:Key="ModDetailsTextBoxStyle"
+               TargetType="TextBox"
+               BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Background"
+                    Value="{DynamicResource ControlBackgroundBrush}" />
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource BorderBrush}" />
+            <Setter Property="CaretBrush"
+                    Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="SelectionBrush"
+                    Value="{DynamicResource SelectionBrush}" />
+        </Style>
+        <Style x:Key="ModDetailsTabControlStyle"
+               TargetType="TabControl">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Background"
+                    Value="{DynamicResource SurfaceBrush}" />
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness"
+                    Value="1" />
+            <Setter Property="Padding"
+                    Value="14" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid Background="{TemplateBinding Background}"
+                              SnapsToDevicePixels="True"
+                              KeyboardNavigation.TabNavigation="Local">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Border Background="{DynamicResource SurfaceAltBrush}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="1,1,1,0">
+                                <TabPanel x:Name="HeaderPanel"
+                                          IsItemsHost="True"
+                                          KeyboardNavigation.TabIndex="1" />
+                            </Border>
+                            <Border Grid.Row="1"
+                                    Margin="0,-1,0,0"
+                                    Padding="{TemplateBinding Padding}"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}">
+                                <ContentPresenter x:Name="PART_SelectedContentHost"
+                                                  ContentSource="SelectedContent"
+                                                  HorizontalAlignment="Stretch"
+                                                  VerticalAlignment="Stretch" />
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="TabItem">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="Background"
+                    Value="{DynamicResource SurfaceAltBrush}" />
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness"
+                    Value="0,0,1,0" />
+            <Setter Property="Padding"
+                    Value="17,11" />
+            <Setter Property="FontWeight"
+                    Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Grid>
+                            <Border x:Name="HeaderBorder"
+                                    Padding="{TemplateBinding Padding}"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}">
+                                <ContentPresenter ContentSource="Header"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True" />
+                            </Border>
+                            <Border x:Name="SelectionLine"
+                                    Height="3"
+                                    VerticalAlignment="Bottom"
+                                    Background="{DynamicResource TransparentBrush}" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+                                <Setter TargetName="HeaderBorder"
+                                        Property="Background"
+                                        Value="{DynamicResource ControlHoverBrush}" />
+                                <Setter Property="Foreground"
+                                        Value="{DynamicResource TextPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected"
+                                     Value="True">
+                                <Setter TargetName="HeaderBorder"
+                                        Property="Background"
+                                        Value="{DynamicResource SurfaceBrush}" />
+                                <Setter TargetName="SelectionLine"
+                                        Property="Background"
+                                        Value="{DynamicResource AccentBrush}" />
+                                <Setter Property="Foreground"
+                                        Value="{DynamicResource TextPrimaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled"
+                                     Value="False">
+                                <Setter Property="Foreground"
+                                        Value="{DynamicResource TextDisabledBrush}" />
+                                <Setter TargetName="HeaderBorder"
+                                        Property="Background"
+                                        Value="{DynamicResource ControlDisabledBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ModDetailsDataGridStyle"
+               TargetType="DataGrid"
+               BasedOn="{StaticResource {x:Type DataGrid}}">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Background"
+                    Value="{DynamicResource SurfaceBrush}" />
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource BorderBrush}" />
+            <Setter Property="RowBackground"
+                    Value="{DynamicResource SurfaceBrush}" />
+            <Setter Property="AlternatingRowBackground"
+                    Value="{DynamicResource SurfaceAltBrush}" />
+            <Setter Property="HorizontalGridLinesBrush"
+                    Value="{DynamicResource DividerBrush}" />
+            <Setter Property="VerticalGridLinesBrush"
+                    Value="{DynamicResource DividerBrush}" />
+        </Style>
+        <Style x:Key="ModDetailsColumnHeaderStyle"
+               TargetType="DataGridColumnHeader">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Background"
+                    Value="{DynamicResource SurfaceAltBrush}" />
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource DividerBrush}" />
+            <Setter Property="BorderThickness"
+                    Value="0,0,1,1" />
+            <Setter Property="Height"
+                    Value="40" />
+            <Setter Property="MinHeight"
+                    Value="40" />
+            <Setter Property="Padding"
+                    Value="12,0,8,0" />
+            <Setter Property="HorizontalContentAlignment"
+                    Value="Left" />
+            <Setter Property="VerticalContentAlignment"
+                    Value="Center" />
+            <Setter Property="FontWeight"
+                    Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridColumnHeader">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <Grid Margin="{TemplateBinding Padding}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="14" />
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter VerticalAlignment="Center"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  ContentStringFormat="{TemplateBinding ContentStringFormat}"
+                                                  TextElement.Foreground="{TemplateBinding Foreground}" />
+                                <Path x:Name="SortIndicator"
+                                      Grid.Column="1"
+                                      Width="8"
+                                      Height="5"
+                                      Margin="4,0,0,0"
+                                      VerticalAlignment="Center"
+                                      Stroke="{TemplateBinding Foreground}"
+                                      StrokeThickness="1.5"
+                                      Visibility="Collapsed"
+                                      Data="M 0,5 L 4,1 L 8,5" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="SortDirection"
+                                     Value="Ascending">
+                                <Setter TargetName="SortIndicator"
+                                        Property="Visibility"
+                                        Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="SortDirection"
+                                     Value="Descending">
+                                <Setter TargetName="SortIndicator"
+                                        Property="Visibility"
+                                        Value="Visible" />
+                                <Setter TargetName="SortIndicator"
+                                        Property="Data"
+                                        Value="M 0,1 L 4,5 L 8,1" />
+                            </Trigger>
+                            <Trigger Property="IsMouseOver"
+                                     Value="True">
+                                <Setter Property="Background"
+                                        Value="{DynamicResource ControlHoverBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ModDetailsContextMenuStyle"
+               TargetType="ContextMenu"
+               BasedOn="{StaticResource {x:Type ContextMenu}}">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Background"
+                    Value="{DynamicResource SurfaceBrush}" />
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource BorderBrush}" />
+        </Style>
+        <Style TargetType="ToolTip"
+               BasedOn="{StaticResource {x:Type ToolTip}}">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Background"
+                    Value="{DynamicResource SurfaceAltBrush}" />
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource BorderBrush}" />
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="18" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="18" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="{Binding HeaderTitle}"
+                           Style="{StaticResource PageTitleStyle}"
+                           TextTrimming="CharacterEllipsis"
+                           ToolTip="{Binding HeaderTitle}" />
+                <TextBlock Margin="0,7,0,0"
+                           Text="{Binding HeaderSummary}"
+                           Style="{StaticResource SecondaryTextStyle}"
+                           TextTrimming="CharacterEllipsis"
+                           ToolTip="{Binding HeaderSummary}" />
+            </StackPanel>
+            <Border Grid.Column="1"
+                    Margin="20,0,0,0"
+                    VerticalAlignment="Top"
+                    Style="{StaticResource StatusBadgeStyle}">
+                <TextBlock Text="{Binding StatusDisplay}"
+                           FontWeight="SemiBold">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock"
+                               BasedOn="{StaticResource ToneTextStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding StatusTone}"
+                                             Value="Success">
+                                    <Setter Property="Foreground"
+                                            Value="{DynamicResource SuccessBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding StatusTone}"
+                                             Value="Warning">
+                                    <Setter Property="Foreground"
+                                            Value="{DynamicResource WarningBrush}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding StatusTone}"
+                                             Value="Error">
+                                    <Setter Property="Foreground"
+                                            Value="{DynamicResource ErrorBrush}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Border>
+        </Grid>
+
+        <TabControl x:Name="ModDetailsTabControl"
+                    Grid.Row="2"
+                    SelectedIndex="{Binding SelectedTabIndex,
+                                            Mode=TwoWay}"
+                    Style="{StaticResource ModDetailsTabControlStyle}">
+            <TabItem Header="{Binding GeneralTabLabel}">
+                <ScrollViewer Padding="2,14,2,4"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="14" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="14" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Style="{StaticResource CardStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="{Binding BasicDataLabel}"
+                                           Style="{StaticResource ModDetailsSectionTitleStyle}" />
+                                <Grid Grid.Row="1"
+                                      Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="160" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding DisplayNameLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBox Text="{Binding Mod.EditDisplayName,
+                                                                UpdateSourceTrigger=PropertyChanged}"
+                                                 Style="{StaticResource ModDetailsTextBoxStyle}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="{Binding VersionLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBox Text="{Binding Mod.EditVersion,
+                                                                UpdateSourceTrigger=PropertyChanged}"
+                                                 Style="{StaticResource ModDetailsTextBoxStyle}" />
+                                    </StackPanel>
+                                </Grid>
+                                <Grid Grid.Row="2"
+                                      Margin="0,12,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding GroupLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <ComboBox ItemsSource="{Binding Mod.AvailableGroups}"
+                                                  DisplayMemberPath="Name"
+                                                  SelectedItem="{Binding Mod.Group}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="{Binding AuthorLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBlock Text="{Binding Mod.Author}" />
+                                    </StackPanel>
+                                </Grid>
+                                <Grid Grid.Row="3"
+                                      Margin="0,14,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="4*" />
+                                        <ColumnDefinition Width="3*" />
+                                        <ColumnDefinition Width="6*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="{Binding SourceLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBlock Text="{Binding Mod.Source}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1"
+                                                Margin="0,0,12,0">
+                                        <TextBlock Text="{Binding NexusIdLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBlock Text="{Binding Mod.NexusModId}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Text="{Binding CategoryLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBlock Text="{Binding Mod.Category}"
+                                                   TextWrapping="Wrap"
+                                                   ToolTip="{Binding Mod.Category}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Column="2"
+                                Style="{StaticResource CardStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="{Binding ArchiveLabel}"
+                                           Style="{StaticResource ModDetailsSectionTitleStyle}" />
+                                <StackPanel Grid.Row="1"
+                                            Margin="0,12,0,0">
+                                    <TextBlock Text="{Binding ArchiveNameLabel}"
+                                               Style="{StaticResource FieldLabelStyle}" />
+                                    <TextBlock Text="{Binding ArchiveName}"
+                                               ToolTip="{Binding ArchivePath}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2"
+                                            Margin="0,12,0,0">
+                                    <TextBlock Text="{Binding FullPathLabel}"
+                                               Style="{StaticResource FieldLabelStyle}" />
+                                    <TextBlock Text="{Binding ArchivePath}"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding ArchivePath}" />
+                                </StackPanel>
+                                <UniformGrid Grid.Row="3"
+                                             Margin="0,14,0,0"
+                                             Columns="3">
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="{Binding SizeLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBlock Text="{Binding Mod.Size}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,12,0">
+                                        <TextBlock Text="{Binding ModifiedLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBlock Text="{Binding Mod.Modified}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Library.FormatLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBlock Text="{Binding Mod.ArchiveFormat}" />
+                                    </StackPanel>
+                                </UniformGrid>
+                                <StackPanel Grid.Row="4"
+                                            Margin="0,14,0,0">
+                                    <TextBlock Text="{Binding FingerprintLabel}"
+                                               Style="{StaticResource FieldLabelStyle}" />
+                                    <TextBlock Text="{Binding ShortFingerprint}"
+                                               ToolTip="{Binding Fingerprint}">
+                                        <TextBlock.ContextMenu>
+                                            <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                                               RelativeSource={RelativeSource Self}}"
+                                                         Style="{StaticResource ModDetailsContextMenuStyle}">
+                                                <MenuItem Header="{Binding CopyHashLabel}"
+                                                          Click="CopyFingerprint_OnClick" />
+                                                <MenuItem Header="{Binding OpenArchiveFolderLabel}"
+                                                          Click="OpenArchiveFolder_OnClick" />
+                                            </ContextMenu>
+                                        </TextBlock.ContextMenu>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Border Grid.Row="2"
+                                Style="{StaticResource CardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding AnalysisLabel}"
+                                           Style="{StaticResource ModDetailsSectionTitleStyle}" />
+                                <UniformGrid Margin="0,12,0,0"
+                                             Columns="2">
+                                    <StackPanel Margin="0,0,14,12">
+                                        <TextBlock Text="{Binding AnalysisStateLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBlock Text="{Binding Mod.AnalysisStateDisplay}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,0,12">
+                                        <TextBlock Text="{Binding LastAnalysisLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBlock Text="{Binding AnalysisDate}" />
+                                    </StackPanel>
+                                    <StackPanel Margin="0,0,14,0">
+                                        <TextBlock Text="{Binding FoundFilesLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBlock Text="{Binding FoundFileCount}" />
+                                    </StackPanel>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding BlockedItemsLabel}"
+                                                   Style="{StaticResource FieldLabelStyle}" />
+                                        <TextBlock Text="{Binding BlockedItemCount}" />
+                                    </StackPanel>
+                                </UniformGrid>
+                                <TextBlock Margin="0,14,0,0"
+                                           Text="{Binding RootSectionLabel}"
+                                           Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock Text="{Binding RootDisplay}"
+                                           TextTrimming="CharacterEllipsis"
+                                           ToolTip="{Binding RootDisplay}"
+                                           Visibility="{Binding ShowResolvedRoot,
+                                                                Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                <ItemsControl Margin="0,8,0,0"
+                                              ItemsSource="{Binding RootChoices}"
+                                              Visibility="{Binding HasMultipleRoots,
+                                                                   Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <RadioButton Margin="0,3"
+                                                         GroupName="ModDetailsRoot"
+                                                         Content="{Binding Display}"
+                                                         IsChecked="{Binding IsSelected,
+                                                                             Mode=OneWay}"
+                                                         Command="{Binding SelectCommand}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="2"
+                                Grid.Column="2"
+                                MinHeight="220"
+                                Style="{StaticResource CardStyle}">
+                            <StackPanel>
+                                <WrapPanel Margin="0,0,0,2"
+                                           VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding RelationsLabel}"
+                                               Style="{StaticResource ModDetailsSectionTitleStyle}"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,10,6" />
+                                    <Button x:Name="NavigateBackButton"
+                                            Margin="0,0,10,6"
+                                            Padding="8,3"
+                                            MaxWidth="420"
+                                            Content="{Binding NavigationHistoryButtonText}"
+                                            ToolTip="{Binding NavigationHistoryButtonText}"
+                                            Command="{Binding NavigateBackCommand}"
+                                            Visibility="{Binding HasNavigationHistory,
+                                                                 Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <Button.ContentTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}"
+                                                           TextTrimming="CharacterEllipsis" />
+                                            </DataTemplate>
+                                        </Button.ContentTemplate>
+                                    </Button>
+                                    <Button x:Name="RefreshNexusRelationsButton"
+                                            Margin="0,0,6,6"
+                                            Padding="10,5"
+                                            Content="{Binding RefreshNexusRelationsLabel}"
+                                            Command="{Binding RefreshNexusRelationsCommand}"
+                                            Visibility="{Binding IsNexusEligible,
+                                                                 Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    <Button x:Name="AddRelationButton"
+                                            Margin="0,0,0,6"
+                                            Padding="10,5"
+                                            Content="{Binding AddRelationLabel}"
+                                            Command="{Binding AddRelationCommand}" />
+                                </WrapPanel>
+                                <TextBlock Margin="0,8,0,0"
+                                           Text="{Binding NexusRelationsStatus}"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Visibility="{Binding HasNexusRelationsStatus,
+                                                                Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                <TextBlock Margin="0,12,0,4"
+                                           Text="{Binding ThisModRequiresSectionHeader}"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Margin="4,4,4,8"
+                                           Text="{Binding EmptyOutgoingRelationsText}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           FontStyle="Italic"
+                                           Visibility="{Binding ShowEmptyOutgoingRelations,
+                                                                Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                <ItemsControl ItemsSource="{Binding OutgoingRelations}"
+                                              Visibility="{Binding HasOutgoingRelations,
+                                                                   Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,2"
+                                                    Padding="8,6"
+                                                    CornerRadius="4"
+                                                    Background="{DynamicResource SurfaceAltBrush}"
+                                                    BorderBrush="{DynamicResource BorderBrush}"
+                                                    BorderThickness="1">
+                                                <Border.ContextMenu>
+                                                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                                                      RelativeSource={RelativeSource Self}}"
+                                                                 Style="{StaticResource ModDetailsContextMenuStyle}">
+                                                        <MenuItem Header="{Binding OpenModDetailsActionText}"
+                                                                  Command="{Binding OpenModDetailsCommand}"
+                                                                  Visibility="{Binding CanOpenModDetails, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <MenuItem Header="{Binding OpenInDownloadsActionText}"
+                                                                  Command="{Binding OpenInDownloadsCommand}"
+                                                                  Visibility="{Binding CanOpenInDownloads, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <MenuItem Header="{Binding OpenOnNexusActionText}"
+                                                                  Command="{Binding OpenOnNexusCommand}"
+                                                                  Visibility="{Binding CanOpenOnNexus, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <MenuItem Header="{Binding AddToDownloadsActionText}"
+                                                                  Command="{Binding AddToDownloadsCommand}"
+                                                                  Visibility="{Binding CanAddToDownloads, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <MenuItem Header="{Binding OpenExternalLinkActionText}"
+                                                                  Command="{Binding OpenExternalLinkCommand}"
+                                                                  Visibility="{Binding CanOpenExternalLink, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <Separator Visibility="{Binding HasContextActions, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <MenuItem Header="{Binding DismissRelationActionText}"
+                                                                  Command="{Binding RemoveCommand}"
+                                                                  Visibility="{Binding CanRemove, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <Separator />
+                                                        <MenuItem Header="{Binding CopyNameActionText}"
+                                                                  Command="{Binding CopyNameCommand}" />
+                                                        <MenuItem Header="{Binding CopyModIdActionText}"
+                                                                  Command="{Binding CopyModIdCommand}"
+                                                                  Visibility="{Binding HasTargetNexusIdentity, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                    </ContextMenu>
+                                                </Border.ContextMenu>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   ToolTip="{Binding Name}"
+                                                                   FontWeight="Medium" />
+                                                        <TextBlock Text="{Binding Notes}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   ToolTip="{Binding Notes}"
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                   FontStyle="Italic"
+                                                                   FontSize="11"
+                                                                   Margin="0,2,0,0"
+                                                                   Visibility="{Binding HasNotes,
+                                                                                        Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                    </StackPanel>
+                                                    <Border Grid.Column="1"
+                                                            Margin="8,0,0,0"
+                                                            Padding="6,2"
+                                                            CornerRadius="3"
+                                                            VerticalAlignment="Center"
+                                                            Background="{DynamicResource ControlBackgroundBrush}"
+                                                            BorderBrush="{DynamicResource BorderBrush}"
+                                                            BorderThickness="1">
+                                                        <TextBlock Text="{Binding Source}"
+                                                                   FontSize="11"
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                    </Border>
+                                                    <Border Grid.Column="2"
+                                                            Margin="6,0,0,0"
+                                                            Padding="6,2"
+                                                            CornerRadius="3"
+                                                            VerticalAlignment="Center"
+                                                            Background="{DynamicResource ControlBackgroundBrush}">
+                                                        <TextBlock Text="{Binding State}"
+                                                                   FontSize="11"
+                                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                    </Border>
+                                                    <Button Grid.Column="3"
+                                                            Margin="8,0,0,0"
+                                                            Padding="6,2"
+                                                            Content="×"
+                                                            ToolTip="{Binding DataContext.RemoveRelationLabel, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"
+                                                            Command="{Binding RemoveCommand}"
+                                                            Visibility="{Binding CanRemove,
+                                                                                 Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <DockPanel Margin="0,14,0,4">
+                                    <TextBlock Text="{Binding DependentsSectionHeader}"
+                                               FontWeight="SemiBold" />
+                                    <TextBlock Margin="6,0,0,0"
+                                               Text="{Binding DependentsSectionHint}"
+                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                               FontStyle="Italic"
+                                               VerticalAlignment="Center" />
+                                </DockPanel>
+                                <TextBlock Margin="4,4,4,8"
+                                           Text="{Binding EmptyIncomingRelationsText}"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           FontStyle="Italic"
+                                           Visibility="{Binding ShowEmptyIncomingRelations,
+                                                                Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                <ItemsControl ItemsSource="{Binding IncomingRelations}"
+                                              Visibility="{Binding HasIncomingRelations,
+                                                                   Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,2"
+                                                    Padding="8,6"
+                                                    CornerRadius="4"
+                                                    Background="{DynamicResource SurfaceAltBrush}"
+                                                    BorderBrush="{DynamicResource BorderBrush}"
+                                                    BorderThickness="1">
+                                                <Border.ContextMenu>
+                                                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                                                      RelativeSource={RelativeSource Self}}"
+                                                                 Style="{StaticResource ModDetailsContextMenuStyle}">
+                                                        <MenuItem Header="{Binding OpenModDetailsActionText}"
+                                                                  Command="{Binding OpenModDetailsCommand}"
+                                                                  Visibility="{Binding CanOpenModDetails, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <MenuItem Header="{Binding OpenInDownloadsActionText}"
+                                                                  Command="{Binding OpenInDownloadsCommand}"
+                                                                  Visibility="{Binding CanOpenInDownloads, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <MenuItem Header="{Binding OpenOnNexusActionText}"
+                                                                  Command="{Binding OpenOnNexusCommand}"
+                                                                  Visibility="{Binding CanOpenOnNexus, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <MenuItem Header="{Binding OpenExternalLinkActionText}"
+                                                                  Command="{Binding OpenExternalLinkCommand}"
+                                                                  Visibility="{Binding CanOpenExternalLink, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <Separator Visibility="{Binding HasContextActions, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <MenuItem Header="{Binding DismissRelationActionText}"
+                                                                  Command="{Binding RemoveCommand}"
+                                                                  Visibility="{Binding CanRemove, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                        <Separator />
+                                                        <MenuItem Header="{Binding CopyNameActionText}"
+                                                                  Command="{Binding CopyNameCommand}" />
+                                                        <MenuItem Header="{Binding CopyModIdActionText}"
+                                                                  Command="{Binding CopyModIdCommand}"
+                                                                  Visibility="{Binding HasTargetNexusIdentity, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                    </ContextMenu>
+                                                </Border.ContextMenu>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   ToolTip="{Binding Name}"
+                                                                   FontWeight="Medium" />
+                                                        <TextBlock Text="{Binding Notes}"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   ToolTip="{Binding Notes}"
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                                   FontStyle="Italic"
+                                                                   FontSize="11"
+                                                                   Margin="0,2,0,0"
+                                                                   Visibility="{Binding HasNotes,
+                                                                                        Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                    </StackPanel>
+                                                    <Border Grid.Column="1"
+                                                            Margin="8,0,0,0"
+                                                            Padding="6,2"
+                                                            CornerRadius="3"
+                                                            VerticalAlignment="Center"
+                                                            Background="{DynamicResource ControlBackgroundBrush}"
+                                                            BorderBrush="{DynamicResource BorderBrush}"
+                                                            BorderThickness="1">
+                                                        <TextBlock Text="{Binding Source}"
+                                                                   FontSize="11"
+                                                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                                                    </Border>
+                                                    <Border Grid.Column="2"
+                                                            Margin="6,0,0,0"
+                                                            Padding="6,2"
+                                                            CornerRadius="3"
+                                                            VerticalAlignment="Center"
+                                                            Background="{DynamicResource ControlBackgroundBrush}">
+                                                        <TextBlock Text="{Binding State}"
+                                                                   FontSize="11"
+                                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                    </Border>
+                                                    <Button Grid.Column="3"
+                                                            Margin="8,0,0,0"
+                                                            Padding="6,2"
+                                                            Content="×"
+                                                            ToolTip="{Binding DataContext.RemoveRelationLabel, RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"
+                                                            Command="{Binding RemoveCommand}"
+                                                            Visibility="{Binding CanRemove,
+                                                                                 Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="{Binding ArchivesTabLabel}">
+                <DataGrid x:Name="ArchivesAndVersionsGrid"
+                          Margin="2,14,2,4"
+                          ItemsSource="{Binding Archives}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          SelectionMode="Single"
+                          HeadersVisibility="Column"
+                          ColumnHeaderHeight="40"
+                          RowHeight="44"
+                          CanUserResizeColumns="True"
+                          Style="{StaticResource ModDetailsDataGridStyle}"
+                          ColumnHeaderStyle="{StaticResource ModDetailsColumnHeaderStyle}"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Binding="{Binding Component}"
+                                            Header="Компонент"
+                                            Width="*"
+                                            MinWidth="280">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock"
+                                       BasedOn="{StaticResource {x:Type TextBlock}}">
+                                    <Setter Property="TextTrimming"
+                                            Value="CharacterEllipsis" />
+                                    <Setter Property="ToolTip"
+                                            Value="{Binding Component}" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTextColumn Binding="{Binding FileId}"
+                                            Header="Файл Nexus"
+                                            Width="110"
+                                            MinWidth="90" />
+                        <DataGridTextColumn Binding="{Binding Version}"
+                                            Header="Версия"
+                                            Width="95"
+                                            MinWidth="75" />
+                        <DataGridTextColumn Binding="{Binding Date}"
+                                            Header="Загружен"
+                                            Width="155"
+                                            MinWidth="120" />
+                        <DataGridTextColumn Binding="{Binding Size}"
+                                            Header="Размер"
+                                            Width="100"
+                                            MinWidth="80" />
+                        <DataGridTemplateColumn Width="150"
+                                                MinWidth="120"
+                                                Header="Состояние"
+                                                SortMemberPath="State">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Margin="12,0"
+                                               VerticalAlignment="Center"
+                                               Text="{Binding State}"
+                                               TextWrapping="NoWrap"
+                                               TextTrimming="CharacterEllipsis"
+                                               ToolTip="{Binding State}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Width="205"
+                                                MinWidth="165"
+                                                Header="Действие">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button MinWidth="165"
+                                            Height="32"
+                                            Margin="8,0"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Content="{Binding PrimaryAction}"
+                                            Command="{Binding PrimaryCommand}"
+                                            Style="{StaticResource CompactButtonStyle}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Width="52"
+                                                MinWidth="44"
+                                                CanUserSort="False">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Width="34"
+                                            Height="32"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Content="⋯"
+                                            Click="ArchiveActionsButton_OnClick"
+                                            Style="{StaticResource CompactButtonStyle}">
+                                            <Button.ContextMenu>
+                                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                                                  RelativeSource={RelativeSource Self}}"
+                                                             Style="{StaticResource ModDetailsContextMenuStyle}">
+                                                    <MenuItem Header="{Binding PrimaryAction}"
+                                                              Command="{Binding PrimaryCommand}" />
+                                                    <MenuItem Header="{Binding RemoveFromGameLabel}"
+                                                              Command="{Binding RemoveFromGameCommand}"
+                                                              Visibility="{Binding ShowRemoveFromGame,
+                                                                           Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                                    <Separator />
+                                                    <MenuItem Header="{Binding SelectArchiveLabel}"
+                                                              Command="{Binding SelectCommand}" />
+                                                    <MenuItem Header="{Binding OpenArchiveFolderLabel}"
+                                                              Command="{Binding OpenFolderCommand}" />
+                                                    <Separator />
+                                                    <MenuItem Header="{Binding VerifyLabel}"
+                                                              Command="{Binding VerifyCommand}" />
+                                                    <MenuItem Header="{Binding ReanalyzeLabel}"
+                                                              Command="{Binding ReanalyzeCommand}" />
+                                                    <MenuItem Header="{Binding DeleteArchiveLabel}"
+                                                              Command="{Binding DeleteCommand}" />
+                                                    <Separator />
+                                                    <MenuItem Header="{Binding CopyShaLabel}"
+                                                              Command="{Binding CopyShaCommand}" />
+                                                </ContextMenu>
+                                            </Button.ContextMenu>
+                                    </Button>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="{Binding ArchiveContentsTabLabel}">
+                <DataGrid x:Name="ArchiveContentsGrid"
+                          Margin="2,14,2,4"
+                          ItemsSource="{Binding ArchiveEntries}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          SelectionMode="Single"
+                          HeadersVisibility="Column"
+                          ColumnHeaderHeight="40"
+                          Style="{StaticResource ModDetailsDataGridStyle}"
+                          ColumnHeaderStyle="{StaticResource ModDetailsColumnHeaderStyle}"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto">
+                    <DataGrid.ContextMenu>
+                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                          RelativeSource={RelativeSource Self}}"
+                                     Style="{StaticResource ModDetailsContextMenuStyle}">
+                            <MenuItem Header="{Binding CopyPathLabel}"
+                                      Click="CopyArchiveEntryPath_OnClick" />
+                            <MenuItem Header="{Binding OpenArchiveFolderLabel}"
+                                      Click="OpenArchiveFolder_OnClick" />
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Width="*"
+                                                MinWidth="300"
+                                                Header="Путь в архиве">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Path}"
+                                               ToolTip="{Binding Path}"
+                                               TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Binding="{Binding Size}"
+                                            Header="Размер"
+                                            Width="90" />
+                        <DataGridTextColumn Binding="{Binding Type}"
+                                            Header="Тип"
+                                            Width="120" />
+                        <DataGridTemplateColumn Width="160"
+                                                Header="Установка">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding State}"
+                                               Style="{StaticResource ToneTextStyle}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Binding="{Binding Reason}"
+                                            Header="Предупреждение"
+                                            Width="240" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </TabItem>
+
+            <TabItem Header="{Binding InstallPlanTabLabel}">
+                <Grid Margin="2,14,2,4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="14" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <UniformGrid Columns="5">
+                        <Border Style="{StaticResource SummaryCardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding AddSummaryLabel}"
+                                           Style="{StaticResource SecondaryTextStyle}" />
+                                <TextBlock Margin="0,5,0,0"
+                                           Text="{Binding AddCount}"
+                                           FontSize="24"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource SuccessBrush}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource SummaryCardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding ReplaceSummaryLabel}"
+                                           Style="{StaticResource SecondaryTextStyle}" />
+                                <TextBlock Margin="0,5,0,0"
+                                           Text="{Binding ReplaceCount}"
+                                           FontSize="24"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource WarningBrush}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource SummaryCardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding OverlaySummaryLabel}"
+                                           Style="{StaticResource SecondaryTextStyle}" />
+                                <TextBlock Margin="0,5,0,0"
+                                           Text="{Binding OverlayCount}"
+                                           FontSize="24"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource WarningBrush}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource SummaryCardStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding ConflictSummaryLabel}"
+                                           Style="{StaticResource SecondaryTextStyle}" />
+                                <TextBlock Margin="0,5,0,0"
+                                           Text="{Binding ConflictCount}"
+                                           FontSize="24"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource ConflictBrush}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource CardStyle}"
+                                Padding="14,11">
+                            <StackPanel>
+                                <TextBlock Text="{Binding BlockedSummaryLabel}"
+                                           Style="{StaticResource SecondaryTextStyle}" />
+                                <TextBlock Margin="0,5,0,0"
+                                           Text="{Binding BlockedCount}"
+                                           FontSize="24"
+                                           FontWeight="SemiBold"
+                                           Foreground="{DynamicResource ErrorBrush}" />
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+                    <DataGrid x:Name="InstallationPlanGrid"
+                              Grid.Row="2"
+                              ItemsSource="{Binding PlanEntries}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              SelectionMode="Single"
+                              HeadersVisibility="Column"
+                              ColumnHeaderHeight="40"
+                              Style="{StaticResource ModDetailsDataGridStyle}"
+                              ColumnHeaderStyle="{StaticResource ModDetailsColumnHeaderStyle}"
+                              HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto">
+                        <DataGrid.ContextMenu>
+                            <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                              RelativeSource={RelativeSource Self}}"
+                                         Style="{StaticResource ModDetailsContextMenuStyle}">
+                                <MenuItem Header="{Binding CopyPathLabel}"
+                                          Click="CopyPlanGamePath_OnClick" />
+                                <MenuItem Header="{Binding OpenArchiveFolderLabel}"
+                                          Click="OpenArchiveFolder_OnClick" />
+                            </ContextMenu>
+                        </DataGrid.ContextMenu>
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Width="*"
+                                                    MinWidth="240"
+                                                    Header="Путь в архиве">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding ArchivePath}"
+                                                   ToolTip="{Binding ArchivePath}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Width="*"
+                                                    MinWidth="260"
+                                                    Header="Путь в игре">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding GamePath}"
+                                                   ToolTip="{Binding GamePath}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Width="160"
+                                                    Header="Действие">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Action}"
+                                                   Style="{StaticResource ToneTextStyle}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Binding="{Binding CurrentOwner}"
+                                                Header="Пересечение / владелец"
+                                                Width="180" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="{Binding InstalledFilesTabLabel}">
+                <Grid Margin="2,14,2,4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="12" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Button HorizontalAlignment="Right"
+                            Content="{Binding CheckInstallationLabel}"
+                            Command="{Binding CheckInstallationCommand}" />
+                    <Grid Grid.Row="2">
+                        <DataGrid x:Name="InstalledFilesGrid"
+                                  ItemsSource="{Binding InstalledFiles}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  SelectionMode="Single"
+                                  HeadersVisibility="Column"
+                                  ColumnHeaderHeight="40"
+                                  Style="{StaticResource ModDetailsDataGridStyle}"
+                                  ColumnHeaderStyle="{StaticResource ModDetailsColumnHeaderStyle}"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto"
+                                  Visibility="{Binding HasInstalledFiles,
+                                                       Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <DataGrid.ContextMenu>
+                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                                  RelativeSource={RelativeSource Self}}"
+                                             Style="{StaticResource ModDetailsContextMenuStyle}">
+                                    <MenuItem Header="{Binding CopyPathLabel}"
+                                              Click="CopyInstalledPath_OnClick" />
+                                    <MenuItem Header="{Binding CopyHashLabel}"
+                                              Click="CopyInstalledHash_OnClick" />
+                                    <MenuItem Header="{Binding OpenArchiveFolderLabel}"
+                                              Click="OpenArchiveFolder_OnClick" />
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Width="*"
+                                                        MinWidth="280"
+                                                        Header="Путь в игре">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding GamePath}"
+                                                       ToolTip="{Binding GamePath}"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Binding="{Binding State}"
+                                                    Header="Состояние"
+                                                    Width="190" />
+                                <DataGridTemplateColumn Width="190"
+                                                        Header="SHA-256">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ShortInstalledHash}"
+                                                       ToolTip="{Binding InstalledHash}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Binding="{Binding PreviousFile}"
+                                                    Header="Оригинал"
+                                                    Width="190" />
+                                <DataGridTemplateColumn Width="190"
+                                                        Header="Проверка">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding ShortPreviousHash}"
+                                                       ToolTip="{Binding PreviousHash}" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <StackPanel HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Visibility="{Binding HasNoInstalledFiles,
+                                                         Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock HorizontalAlignment="Center"
+                                       Text="{Binding NotInstalledTitle}"
+                                       Style="{StaticResource ModDetailsSectionTitleStyle}" />
+                            <TextBlock Margin="0,8,0,0"
+                                       Text="{Binding NotInstalledMessage}"
+                                       Style="{StaticResource SecondaryTextStyle}" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </TabItem>
+        </TabControl>
+
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal"
+                        VerticalAlignment="Center">
+                <Button x:Name="DirectPrimaryActionButton"
+                        MinWidth="150"
+                        Content="{Binding PrimaryActionLabel}"
+                        Command="{Binding PrimaryCommand}"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Visibility="{Binding ShowDirectPrimaryAction,
+                                             Converter={StaticResource BooleanToVisibilityConverter}}" />
+                <Button x:Name="ArchiveActionMenuButton"
+                        MinWidth="150"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Visibility="{Binding ShowArchiveActionMenu,
+                                             Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Click="ArchiveActionMenuButton_OnClick">
+                    <Button.Content>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding ArchiveMenuButtonLabel}" />
+                            <TextBlock Margin="10,0,0,0"
+                                       Text="▾" />
+                        </StackPanel>
+                    </Button.Content>
+                    <Button.ContextMenu>
+                        <ContextMenu ItemsSource="{Binding PlacementTarget.DataContext.ArchiveVersionActions,
+                                                          RelativeSource={RelativeSource Self}}">
+                            <ContextMenu.ItemContainerStyle>
+                                <Style TargetType="MenuItem"
+                                       BasedOn="{StaticResource {x:Type MenuItem}}">
+                                    <Setter Property="Header"
+                                            Value="{Binding Label}" />
+                                    <Setter Property="Command"
+                                            Value="{Binding Command}" />
+                                </Style>
+                            </ContextMenu.ItemContainerStyle>
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+                <Button MinWidth="140"
+                        Margin="8,0,0,0"
+                        Content="{Binding RemoveFromGameLabel}"
+                        Command="{Binding RemoveFromGameCommand}"
+                        Visibility="{Binding ShowRemoveFromGame,
+                                             Converter={StaticResource BooleanToVisibilityConverter}}" />
+                <TextBlock Margin="14,0,0,0"
+                           MaxWidth="380"
+                           VerticalAlignment="Center"
+                           Text="{Binding ProblemText}"
+                           TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           Visibility="{Binding HasProblemText,
+                                                Converter={StaticResource BooleanToVisibilityConverter}}" />
+            </StackPanel>
+            <WrapPanel Grid.Column="1"
+                       HorizontalAlignment="Right">
+                <Button MinWidth="100"
+                        Margin="4,0"
+                        Content="{Binding SaveLabel}"
+                        Command="{Binding SaveCommand}" />
+                <Button Margin="4,0"
+                        Content="{Binding OpenFolderLabel}"
+                        Command="{Binding Mod.OpenFolderCommand}" />
+                <Button MinWidth="110"
+                        Margin="4,0"
+                        Content="{Binding OpenNexusLabel}"
+                        Command="{Binding Mod.OpenNexusCommand}" />
+                <Button MinWidth="90"
+                        Margin="4,0,0,0"
+                        Content="{Binding CloseLabel}"
+                        Click="CloseButton_OnClick" />
+            </WrapPanel>
+        </Grid>
+    </Grid>
+</Window>

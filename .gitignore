@@ -1,0 +1,25 @@
+.vs/
+.tmp/
+artifacts/
+/Backup/
+**/bin/
+**/obj/
+**/TestResults/
+*.user
+*.suo
+*.db
+*.db-shm
+*.db-wal
+*.log
+*.dmp
+
+# RF-00+: local runtime evidence (never commit machine-specific outputs)
+docs/test-baseline/artifacts/
+docs/test-baseline/runtime/
+**/Deploy_*/
+*.trx
+*.pid.txt
+*.stdout.log
+*.stderr.log
+docs/performance/*_RAW.txt
+docs/performance/*_raw.*

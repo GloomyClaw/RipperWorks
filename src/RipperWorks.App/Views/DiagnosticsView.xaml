@@ -1,0 +1,899 @@
+<UserControl x:Class="RipperWorks.App.Views.DiagnosticsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             MinWidth="0"
+             MinHeight="0">
+    <UserControl.Resources>
+        <Style x:Key="DiagnosticLabelStyle"
+               TargetType="TextBlock"
+               BasedOn="{StaticResource SecondaryTextStyle}">
+            <Setter Property="Margin"
+                    Value="0,4,12,4" />
+        </Style>
+        <Style x:Key="DiagnosticValueStyle"
+               TargetType="TextBlock">
+            <Setter Property="Margin"
+                    Value="0,4" />
+            <Setter Property="TextWrapping"
+                    Value="Wrap" />
+        </Style>
+
+        <Style x:Key="FilterChipButtonStyle"
+               TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10,4" />
+            <Setter Property="MinHeight" Value="24" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Border"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="Tag" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{DynamicResource CardHoverBrush}" />
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                                <Setter Property="FontWeight" Value="SemiBold" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SelectableReadOnlyTextStyle" TargetType="TextBox">
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="SelectionBrush" Value="{DynamicResource SelectionBrush}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <ScrollViewer x:Name="PART_ContentHost"
+                                      Margin="{TemplateBinding Padding}"
+                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SelectableMonospaceTextStyle"
+               TargetType="TextBox"
+               BasedOn="{StaticResource SelectableReadOnlyTextStyle}">
+            <Setter Property="FontFamily" Value="Consolas, Cascadia Code, Courier New" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="28,20,28,22">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="{Binding Header}"
+                   Style="{StaticResource PageTitleStyle}" />
+
+        <Grid Grid.Row="1"
+              Margin="0,18,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*"
+                                  MinWidth="300" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="3*"
+                                  MinWidth="360" />
+            </Grid.ColumnDefinitions>
+
+            <!-- LEFT SIDE: Game, Library, RipperWorks State & Diagnostic Sources -->
+            <Border Grid.Column="0"
+                    Style="{StaticResource CardStyle}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <TextBlock Text="{Binding StateHeader}"
+                                   Margin="0,0,0,16"
+                                   Style="{StaticResource SectionTitleStyle}" />
+
+                        <!-- Section 1: Game State -->
+                        <TextBlock Text="{Binding GameHeader}"
+                                   Margin="0,0,0,8"
+                                   FontWeight="SemiBold" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44*" />
+                                <ColumnDefinition Width="56*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding GameFolderLabel}"
+                                       Style="{StaticResource DiagnosticLabelStyle}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Settings.GameRootDisplay}"
+                                       Style="{StaticResource DiagnosticValueStyle}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44*" />
+                                <ColumnDefinition Width="56*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding ExecutableLabel}"
+                                       Style="{StaticResource DiagnosticLabelStyle}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Settings.ExecutableStateValue}"
+                                       Style="{StaticResource DiagnosticValueStyle}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44*" />
+                                <ColumnDefinition Width="56*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding WriteAccessLabel}"
+                                       Style="{StaticResource DiagnosticLabelStyle}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Settings.WriteAccessStateValue}"
+                                       Style="{StaticResource DiagnosticValueStyle}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44*" />
+                                <ColumnDefinition Width="56*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding ForeignModsLabel}"
+                                       Style="{StaticResource DiagnosticLabelStyle}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Settings.ForeignModsStateValue}"
+                                       Style="{StaticResource DiagnosticValueStyle}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44*" />
+                                <ColumnDefinition Width="56*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding ProfileLabel}"
+                                       Style="{StaticResource DiagnosticLabelStyle}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Settings.ProfileStateValue}"
+                                       Style="{StaticResource DiagnosticValueStyle}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44*" />
+                                <ColumnDefinition Width="56*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding LastValidationLabel}"
+                                       Style="{StaticResource DiagnosticLabelStyle}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Settings.LastValidationValue}"
+                                       Style="{StaticResource DiagnosticValueStyle}" />
+                        </Grid>
+                        <WrapPanel Margin="0,12,0,0">
+                            <Button Margin="0,0,8,8"
+                                    Content="{Binding ValidateGameLabel}"
+                                    Command="{Binding Settings.ValidateGameCommand}"
+                                    Style="{StaticResource CompactButtonStyle}" />
+                            <Button Margin="0,0,8,8"
+                                    Content="{Binding OpenGameFolderLabel}"
+                                    Command="{Binding OpenGameFolderCommand}"
+                                    Style="{StaticResource CompactButtonStyle}" />
+                        </WrapPanel>
+
+                        <Border Margin="0,12"
+                                BorderBrush="{DynamicResource DividerBrush}"
+                                BorderThickness="0,1,0,0" />
+
+                        <!-- Section: Game Folder Maintenance -->
+                        <TextBlock Text="{Binding Maintenance.SectionHeading}"
+                                   Margin="0,0,0,8"
+                                   FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding Maintenance.StatusMessage}"
+                                   Margin="0,0,0,4"
+                                   TextWrapping="Wrap"
+                                   Style="{StaticResource SecondaryTextStyle}" />
+                        <TextBlock Text="{Binding Maintenance.DetailMessage}"
+                                   Visibility="{Binding Maintenance.HasCandidates, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                   Margin="0,0,0,6"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource WarningBrush}" />
+                        <WrapPanel Margin="0,4,0,0">
+                            <Button Margin="0,0,8,8"
+                                    Content="{Binding Maintenance.CheckGameLabel}"
+                                    Command="{Binding Maintenance.CheckGameCommand}"
+                                    Style="{StaticResource CompactButtonStyle}" />
+                            <Button Margin="0,0,8,8"
+                                    Content="{Binding Maintenance.ViewAndCleanLabel}"
+                                    Visibility="{Binding Maintenance.HasCandidates, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                    Command="{Binding Maintenance.ViewAndCleanCommand}"
+                                    Style="{StaticResource PrimaryButtonStyle}" />
+                            <Button Margin="0,0,8,8"
+                                    Content="{Binding Maintenance.RestoreBackupLabel}"
+                                    Visibility="{Binding Maintenance.HasBackups, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                    Command="{Binding Maintenance.RestoreBackupCommand}"
+                                    Style="{StaticResource CompactButtonStyle}" />
+                        </WrapPanel>
+
+                        <Border Margin="0,12"
+                                BorderBrush="{DynamicResource DividerBrush}"
+                                BorderThickness="0,1,0,0" />
+
+                        <!-- Section 2: Library State -->
+                        <TextBlock Text="{Binding LibraryHeader}"
+                                   Margin="0,0,0,8"
+                                   FontWeight="SemiBold" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44*" />
+                                <ColumnDefinition Width="56*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding LibraryFolderLabel}"
+                                       Style="{StaticResource DiagnosticLabelStyle}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Settings.LibraryRoot}"
+                                       Style="{StaticResource DiagnosticValueStyle}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44*" />
+                                <ColumnDefinition Width="56*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding DatabaseModsLabel}"
+                                       Style="{StaticResource DiagnosticLabelStyle}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Library.PackageCountValue}"
+                                       Style="{StaticResource DiagnosticValueStyle}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44*" />
+                                <ColumnDefinition Width="56*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding SkippedFoldersLabel}"
+                                       Style="{StaticResource DiagnosticLabelStyle}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Library.SkippedDirectoryCountValue}"
+                                       Style="{StaticResource DiagnosticValueStyle}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44*" />
+                                <ColumnDefinition Width="56*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding LastUpdateLabel}"
+                                       Style="{StaticResource DiagnosticLabelStyle}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Library.LastUpdatedValue}"
+                                       Style="{StaticResource DiagnosticValueStyle}" />
+                        </Grid>
+                        <Button Margin="0,12,0,0"
+                                HorizontalAlignment="Left"
+                                Content="{Binding OpenLibraryFolderLabel}"
+                                Command="{Binding OpenLibraryFolderCommand}"
+                                Style="{StaticResource CompactButtonStyle}" />
+
+                        <Border Margin="0,16,0,12"
+                                BorderBrush="{DynamicResource DividerBrush}"
+                                BorderThickness="0,1,0,0" />
+
+                        <!-- Section 3: RipperWorks State -->
+                        <TextBlock Text="{Binding RipperWorksHeader}"
+                                   Margin="0,0,0,8"
+                                   FontWeight="SemiBold" />
+                        <Border Margin="0,0,0,12"
+                                Padding="10"
+                                Background="{DynamicResource CardHoverBrush}"
+                                Visibility="{Binding RecoveryRequired,
+                                                     Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding RecoveryRequiredText}"
+                                           TextWrapping="Wrap" />
+                                <Button Content="{Binding RequestRecoveryLabel}"
+                                        Command="{Binding RequestRecoveryCommand}"
+                                        Margin="0,8,0,0"
+                                        HorizontalAlignment="Left" />
+                            </StackPanel>
+                        </Border>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44*" />
+                                <ColumnDefinition Width="56*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding DatabaseLabel}"
+                                       Style="{StaticResource DiagnosticLabelStyle}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding DatabasePath}"
+                                       ToolTip="{Binding DatabasePath}"
+                                       TextTrimming="CharacterEllipsis"
+                                       Style="{StaticResource DiagnosticValueStyle}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44*" />
+                                <ColumnDefinition Width="56*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding SchemaVersionLabel}"
+                                       Style="{StaticResource DiagnosticLabelStyle}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding SchemaVersionValue}"
+                                       Style="{StaticResource DiagnosticValueStyle}" />
+                        </Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="44*" />
+                                <ColumnDefinition Width="56*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding LogsFolderLabel}"
+                                       Style="{StaticResource DiagnosticLabelStyle}" />
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding LogsDirectory}"
+                                       ToolTip="{Binding LogsDirectory}"
+                                       TextTrimming="CharacterEllipsis"
+                                       Style="{StaticResource DiagnosticValueStyle}" />
+                        </Grid>
+                        <WrapPanel Margin="0,12,0,0">
+                            <Button Margin="0,0,8,8"
+                                    Content="{Binding OpenLogsFolderLabel}"
+                                    Command="{Binding OpenLogsFolderCommand}"
+                                    Style="{StaticResource CompactButtonStyle}" />
+                            <Button Margin="0,0,8,8"
+                                    Content="{Binding CopyStateLabel}"
+                                    Command="{Binding CopyStateCommand}"
+                                    Style="{StaticResource CompactButtonStyle}" />
+                            <Button Margin="0,0,8,8"
+                                    Content="{Binding DumpLibrarySelectionTraceLabel}"
+                                    Command="{Binding DumpLibrarySelectionTraceCommand}"
+                                    Style="{StaticResource CompactButtonStyle}" />
+                        </WrapPanel>
+
+                        <Border Margin="0,16,0,12"
+                                BorderBrush="{DynamicResource DividerBrush}"
+                                BorderThickness="0,1,0,0" />
+
+                        <!-- Section 4: Diagnostic Sources -->
+                        <TextBlock Text="{Binding DiagnosticSourcesHeader}"
+                                   Margin="0,0,0,8"
+                                   FontWeight="SemiBold" />
+                        <ItemsControl ItemsSource="{Binding DiagnosticSources}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding DisplayName}"
+                                                   Style="{StaticResource DiagnosticLabelStyle}" />
+                                        <Border Grid.Column="1"
+                                                Padding="8,2"
+                                                CornerRadius="4"
+                                                Background="{DynamicResource SurfaceAltBrush}">
+                                            <TextBlock Text="{Binding StatusText}"
+                                                       FontSize="12"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <GridSplitter Grid.Column="1"
+                          Width="8"
+                          HorizontalAlignment="Stretch"
+                          VerticalAlignment="Stretch"
+                          Background="{DynamicResource DividerBrush}"
+                          ResizeDirection="Columns"
+                          ResizeBehavior="PreviousAndNext" />
+
+            <!-- RIGHT SIDE: Two Tabs (RipperWorks / Game Session) -->
+            <Border Grid.Column="2"
+                    Style="{StaticResource CardStyle}">
+                <TabControl SelectedIndex="{Binding SelectedTabIndex}"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Padding="0">
+                    <TabControl.ItemContainerStyle>
+                        <Style TargetType="TabItem">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="TabItem">
+                                        <Border x:Name="TabBorder"
+                                                Margin="0,0,8,12"
+                                                Padding="14,6"
+                                                Background="{DynamicResource SurfaceAltBrush}"
+                                                BorderBrush="{DynamicResource BorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="5"
+                                                Cursor="Hand">
+                                            <ContentPresenter ContentSource="Header"
+                                                              TextElement.FontWeight="SemiBold"
+                                                              TextElement.Foreground="{DynamicResource TextSecondaryBrush}" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="TabBorder" Property="Background" Value="{DynamicResource CardHoverBrush}" />
+                                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </TabControl.ItemContainerStyle>
+
+                    <!-- TAB 1: RipperWorks Event Log -->
+                    <TabItem Header="{Binding RipperWorksTabLabel}">
+                        <Grid Margin="0,8,0,0">
+                            <ListBox ItemsSource="{Binding SessionEvents.Events}"
+                                     Background="{DynamicResource TransparentBrush}"
+                                     BorderThickness="0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="52" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Time}"
+                                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding Message}"
+                                                       TextWrapping="Wrap"
+                                                       Style="{StaticResource JournalMessageTextStyle}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <TextBlock HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Text="{Binding NoSessionEvents}"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap"
+                                       Foreground="{DynamicResource TextSecondaryBrush}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Visibility"
+                                                Value="Visible" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SessionEvents.HasEvents}"
+                                                         Value="True">
+                                                <Setter Property="Visibility"
+                                                        Value="Collapsed" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
+                    </TabItem>
+
+                    <!-- TAB 2: Game Session Diagnostics -->
+                    <TabItem Header="{Binding GameSessionTabLabel}">
+                        <Grid Margin="0,8,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!-- Session Selector & Actions Bar -->
+                            <Grid Grid.Row="0" Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <Button Grid.Column="0"
+                                        Margin="0,0,8,0"
+                                        Content="{Binding RefreshLabel}"
+                                        Command="{Binding RefreshCommand}"
+                                        Style="{StaticResource CompactButtonStyle}" />
+
+                                <ComboBox Grid.Column="1"
+                                          ItemsSource="{Binding Sessions}"
+                                          SelectedItem="{Binding SelectedSession}"
+                                          DisplayMemberPath="DisplayLabel"
+                                          VerticalAlignment="Center" />
+
+                                <StackPanel Grid.Column="2"
+                                            Orientation="Horizontal"
+                                            Margin="8,0,0,0">
+                                    <Button Content="{Binding OpenLogLabel}"
+                                            Command="{Binding OpenLogCommand}"
+                                            Margin="0,0,6,0"
+                                            Style="{StaticResource CompactButtonStyle}" />
+                                    <Button Content="{Binding ExportLogLabel}"
+                                            Command="{Binding ExportLogCommand}"
+                                            Style="{StaticResource CompactButtonStyle}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <!-- Session Summary Card -->
+                            <Border Grid.Row="1"
+                                    Margin="0,0,0,10"
+                                    Padding="10,8"
+                                    CornerRadius="5"
+                                    Background="{DynamicResource SurfaceAltBrush}"
+                                    Visibility="{Binding SessionSummaryVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <WrapPanel>
+                                    <TextBlock Text="{Binding StartLabel}" Margin="0,0,4,0" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <TextBlock Text="{Binding SelectedSession.StartLocalFormatted}" FontWeight="SemiBold" Margin="0,0,12,0" />
+
+                                    <TextBlock Text="{Binding EndLabel}" Margin="0,0,4,0" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <TextBlock Text="{Binding SelectedSession.EndLocalFormatted}" FontWeight="SemiBold" Margin="0,0,12,0" />
+
+                                    <TextBlock Text="{Binding ResultLabel}" Margin="0,0,4,0" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <TextBlock Text="{Binding SelectedSession.ResultText}" FontWeight="SemiBold" Margin="0,0,12,0" />
+
+                                    <TextBlock Text="{Binding ExitCodeLabel}" Margin="0,0,4,0" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <TextBlock Text="{Binding SelectedSession.ExitCodeText}" FontWeight="SemiBold" Margin="0,0,12,0" />
+                                </WrapPanel>
+                            </Border>
+
+                            <!-- Severity Filter Chips -->
+                            <WrapPanel Grid.Row="2"
+                                       Margin="0,0,0,10"
+                                       Visibility="{Binding HasSessions, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Button Margin="0,0,6,4"
+                                        Content="{Binding FilterAllLabel}"
+                                        Command="{Binding FilterAllCommand}"
+                                        Tag="{Binding IsFilterAll}"
+                                        Style="{StaticResource FilterChipButtonStyle}" />
+                                <Button Margin="0,0,6,4"
+                                        Content="{Binding FilterErrorsLabel}"
+                                        Command="{Binding FilterErrorsCommand}"
+                                        Tag="{Binding IsFilterErrors}"
+                                        Style="{StaticResource FilterChipButtonStyle}" />
+                                <Button Margin="0,0,6,4"
+                                        Content="{Binding FilterWarningsLabel}"
+                                        Command="{Binding FilterWarningsCommand}"
+                                        Tag="{Binding IsFilterWarnings}"
+                                        Style="{StaticResource FilterChipButtonStyle}" />
+                                <Button Margin="0,0,6,4"
+                                        Content="{Binding FilterCrashReportsLabel}"
+                                        Command="{Binding FilterCrashReportsCommand}"
+                                        Tag="{Binding IsFilterCrashReports}"
+                                        Style="{StaticResource FilterChipButtonStyle}" />
+                            </WrapPanel>
+
+                            <!-- Events Virtualized List -->
+                            <Grid Grid.Row="3">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Border Grid.Row="0"
+                                        Margin="0,0,0,6"
+                                        Padding="8,4"
+                                        CornerRadius="4"
+                                        Background="{DynamicResource SurfaceAltBrush}"
+                                        Visibility="{Binding HasUnavailableSources, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <TextBlock Text="{Binding UnavailableSourcesNotice}"
+                                               FontSize="12"
+                                               Foreground="{DynamicResource WarningBrush}"
+                                               TextWrapping="Wrap" />
+                                </Border>
+
+                                <ListBox Grid.Row="1"
+                                         ItemsSource="{Binding FilteredEvents}"
+                                         SelectedItem="{Binding SelectedEvent}"
+                                         Background="{DynamicResource TransparentBrush}"
+                                         BorderThickness="0"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                         VirtualizingStackPanel.IsVirtualizing="True"
+                                         VirtualizingStackPanel.VirtualizationMode="Recycling">
+                                    <ListBox.ItemContainerStyle>
+                                        <Style TargetType="ListBoxItem">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                            <Setter Property="Padding" Value="0" />
+                                            <Setter Property="Margin" Value="0,1" />
+                                            <Setter Property="BorderThickness" Value="0" />
+                                            <Setter Property="Background" Value="Transparent" />
+                                            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="ListBoxItem">
+                                                        <Border x:Name="ItemBorder"
+                                                                Background="{TemplateBinding Background}"
+                                                                BorderThickness="1"
+                                                                BorderBrush="Transparent"
+                                                                CornerRadius="4"
+                                                                Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter />
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource ControlHoverBrush}" />
+                                                            </Trigger>
+                                                            <Trigger Property="IsSelected" Value="True">
+                                                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource SelectionBrush}" />
+                                                                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </ListBox.ItemContainerStyle>
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Margin="0,1"
+                                                    Padding="8,6"
+                                                    CornerRadius="4"
+                                                    Background="{DynamicResource SurfaceAltBrush}"
+                                                    BorderThickness="3,1,1,1">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="BorderBrush" Value="{DynamicResource SurfaceAltBrush}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding SeverityBrushKey}" Value="ErrorBrush">
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource ErrorBrush}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding SeverityBrushKey}" Value="WarningBrush">
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource WarningBrush}" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsCrashReport}" Value="True">
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource TextSecondaryBrush}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <Border Grid.Column="0"
+                                                            Margin="0,0,8,0"
+                                                            Padding="6,2"
+                                                            CornerRadius="3"
+                                                            Background="{DynamicResource SurfaceBrush}"
+                                                            BorderThickness="1">
+                                                        <Border.Style>
+                                                            <Style TargetType="Border">
+                                                                <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding SeverityBrushKey}" Value="ErrorBrush">
+                                                                        <Setter Property="BorderBrush" Value="{DynamicResource ErrorBrush}" />
+                                                                    </DataTrigger>
+                                                                    <DataTrigger Binding="{Binding SeverityBrushKey}" Value="WarningBrush">
+                                                                        <Setter Property="BorderBrush" Value="{DynamicResource WarningBrush}" />
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Border.Style>
+                                                        <TextBlock Text="{Binding SeverityText}"
+                                                                   FontSize="11"
+                                                                   FontWeight="SemiBold">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding SeverityBrushKey}" Value="ErrorBrush">
+                                                                            <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding SeverityBrushKey}" Value="WarningBrush">
+                                                                            <Setter Property="Foreground" Value="{DynamicResource WarningBrush}" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </Border>
+
+                                                    <TextBlock Grid.Column="1"
+                                                               Text="{Binding EventTimestampText}"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"
+                                                               Margin="0,0,8,0"
+                                                               FontSize="12" />
+
+                                                    <TextBlock Grid.Column="2"
+                                                               Text="{Binding SourceName}"
+                                                               FontWeight="SemiBold"
+                                                               Margin="0,0,8,0" />
+
+                                                    <TextBlock Grid.Column="3"
+                                                               Text="{Binding Message}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+
+                                <!-- Empty state: No sessions saved -->
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding NoSessionsText}"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Visibility="{Binding HasNoSessions, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                <!-- Empty state: Clean session with explicit no-warnings/errors statement -->
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding NoEventsText}"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Visibility="{Binding IsCleanSession, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                <!-- Notice: Incomplete session / diagnostics not finalized -->
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding IncompleteSessionNotice}"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Visibility="{Binding IsIncompleteSession, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                <!-- Notice: Unsupported session format -->
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding UnsupportedSessionNotice}"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Visibility="{Binding IsUnsupportedSession, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                <!-- Notice: Malformed session -->
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding MalformedSessionNotice}"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Visibility="{Binding IsMalformedSession, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                <!-- Empty state: Filter returned 0 items while session has events -->
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           Text="{Binding NoFilteredEventsText}"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextSecondaryBrush}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding HasSessions}" Value="True" />
+                                                        <Condition Binding="{Binding HasNoFilteredEvents}" Value="True" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </MultiDataTrigger>
+                                                <DataTrigger Binding="{Binding SelectedSession.AllEventsCount}" Value="0">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsUnsupportedSession}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsMalformedSession}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsIncompleteSession}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+
+                            <!-- Selected Event Detail Pane -->
+                            <Border Grid.Row="4"
+                                    Margin="0,10,0,0"
+                                    Padding="12"
+                                    CornerRadius="6"
+                                    Background="{DynamicResource SurfaceAltBrush}"
+                                    Visibility="{Binding HasSelectedEvent, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Header row: Source, Time, Severity, Open Source -->
+                                    <Grid Grid.Row="0" Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <WrapPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding SelectedEvent.SourceName}" FontWeight="Bold" Margin="0,0,8,0" />
+                                            <TextBlock Text="{Binding SelectedEvent.SeverityText}" Margin="0,0,8,0" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                            <TextBlock Text="{Binding SelectedEvent.EventTimestampText}" Foreground="{DynamicResource TextSecondaryBrush}" />
+                                        </WrapPanel>
+                                        <Button Grid.Column="1"
+                                                Content="{Binding OpenSourceLabel}"
+                                                Command="{Binding OpenSourceCommand}"
+                                                Style="{StaticResource CompactButtonStyle}" />
+                                    </Grid>
+
+                                    <!-- Context & Code row -->
+                                    <WrapPanel Grid.Row="1" Margin="0,0,0,4">
+                                        <TextBlock Text="{Binding ContextLabel}" Margin="0,0,4,0" Foreground="{DynamicResource TextSecondaryBrush}" Visibility="{Binding SelectedEvent.HasContext, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                        <TextBox Style="{StaticResource SelectableReadOnlyTextStyle}" Text="{Binding SelectedEvent.Context, Mode=OneWay}" Margin="0,0,12,0" Visibility="{Binding SelectedEvent.HasContext, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                                        <TextBlock Text="{Binding CodeLabel}" Margin="0,0,4,0" Foreground="{DynamicResource TextSecondaryBrush}" Visibility="{Binding SelectedEvent.HasDiagnosticCode, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                        <TextBox Style="{StaticResource SelectableReadOnlyTextStyle}" Text="{Binding SelectedEvent.NativeDiagnosticCode, Mode=OneWay}" Margin="0,0,12,0" Visibility="{Binding SelectedEvent.HasDiagnosticCode, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    </WrapPanel>
+
+                                    <!-- Full Message -->
+                                    <TextBox Grid.Row="2"
+                                             Style="{StaticResource SelectableReadOnlyTextStyle}"
+                                             Text="{Binding SelectedEvent.Message, Mode=OneWay}"
+                                             Margin="0,0,0,4"
+                                             Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                                    <!-- Additional / Crash Details -->
+                                    <Border Grid.Row="3"
+                                            Margin="0,4,0,6"
+                                            Padding="8"
+                                            CornerRadius="4"
+                                            Background="{DynamicResource SurfaceBrush}"
+                                            Visibility="{Binding SelectedEvent.HasAdditionalDetails, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <TextBox Style="{StaticResource SelectableMonospaceTextStyle}"
+                                                 Text="{Binding SelectedEvent.AdditionalDetails, Mode=OneWay}" />
+                                    </Border>
+
+                                    <!-- Source Log / Report Path -->
+                                    <Grid Grid.Row="4" Margin="0,2,0,0" Visibility="{Binding SelectedEvent.HasSourcePath, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding SourcePathLabel}" Margin="0,0,6,0" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+                                        <TextBox Grid.Column="1"
+                                                 Style="{StaticResource SelectableReadOnlyTextStyle}"
+                                                 Text="{Binding SelectedEvent.SourcePath, Mode=OneWay}"
+                                                 ToolTip="{Binding SelectedEvent.SourcePath}"
+                                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                                 FontSize="12" />
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                    </TabItem>
+                </TabControl>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

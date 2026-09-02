@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>RipperWorks</AssemblyName>
+    <RootNamespace>RipperWorks.App</RootNamespace>
+    <Product>RipperWorks</Product>
+    <Title>RipperWorks</Title>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4078.44" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\RipperWorks.Core\RipperWorks.Core.csproj" />
+    <ProjectReference Include="..\RipperWorks.Infrastructure\RipperWorks.Infrastructure.csproj" />
+    <ProjectReference Include="..\RipperWorks.Downloader\RipperWorks.Downloader.csproj" />
+    <ProjectReference Include="..\RipperWorks.Organizer\RipperWorks.Organizer.csproj" />
+    <ProjectReference Include="..\RipperWorks.GameMaintenance\RipperWorks.GameMaintenance.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,537 @@
+<UserControl x:Class="RipperWorks.App.Views.LibraryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             MinWidth="0"
+             MinHeight="0">
+    <UserControl.Resources>
+        <DataTemplate x:Key="LibraryChoiceTemplate">
+            <TextBlock Text="{Binding Display}" />
+        </DataTemplate>
+        <Style x:Key="TrimmedLibraryCellStyle"
+               TargetType="TextBlock">
+            <Setter Property="TextTrimming"
+                    Value="CharacterEllipsis" />
+        </Style>
+        <Style x:Key="LibraryPathCellStyle"
+               TargetType="TextBlock"
+               BasedOn="{StaticResource TrimmedLibraryCellStyle}">
+            <Setter Property="ToolTip"
+                    Value="{Binding ArchivePath}" />
+        </Style>
+        <Style x:Key="LibraryVersionCellStyle"
+               TargetType="TextBlock"
+               BasedOn="{StaticResource TrimmedLibraryCellStyle}">
+            <Setter Property="ToolTip"
+                    Value="{Binding VersionToolTip}" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="28,20,28,18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Margin="0,0,0,14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="{Binding Header}"
+                       Style="{StaticResource PageTitleStyle}" />
+            <Button x:Name="LaunchGameButton"
+                    Grid.Column="1"
+                    MinWidth="140"
+                    Content="{Binding DataContext.Settings.LaunchGameLabel,
+                                      RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                    Command="{Binding DataContext.Settings.LaunchGameCommand,
+                                      RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                    Style="{StaticResource PrimaryButtonStyle}" />
+        </Grid>
+
+        <ScrollViewer Grid.Row="1"
+                      Margin="0,0,0,12"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled">
+            <Grid MinWidth="1015">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="230" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="125" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="170" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="140" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition Width="10" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <TextBox x:Name="LibrarySearchBox"
+                         Grid.Column="0"
+                         Tag="{Binding SearchPlaceholder}"
+                         Text="{Binding SearchText,
+                                        UpdateSourceTrigger=PropertyChanged}"
+                         Style="{StaticResource CompactTextBoxStyle}" />
+
+                <ComboBox x:Name="FilterComboBox"
+                          Grid.Column="2"
+                          SelectedValuePath="Tag"
+                          SelectedIndex="0"
+                          SelectedValue="{Binding SelectedFilter}"
+                          Style="{StaticResource CompactComboBoxStyle}">
+                    <ComboBoxItem Tag="All"
+                                  Content="{Binding DataContext.FilterAllDisplay,
+                                                    RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" />
+                    <ComboBoxItem Tag="Nexus"
+                                  Content="{Binding DataContext.FilterNexusDisplay,
+                                                    RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" />
+                    <ComboBoxItem Tag="Local"
+                                  Content="{Binding DataContext.FilterLocalDisplay,
+                                                    RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" />
+                    <ComboBoxItem Tag="WithMetadata"
+                                  Content="{Binding DataContext.FilterWithMetadataDisplay,
+                                                    RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" />
+                    <ComboBoxItem Tag="WithoutMetadata"
+                                  Content="{Binding DataContext.FilterWithoutMetadataDisplay,
+                                                    RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" />
+                </ComboBox>
+
+                <ComboBox x:Name="AnalysisFilterComboBox"
+                          Grid.Column="4"
+                          SelectedValuePath="Tag"
+                          SelectedIndex="0"
+                          SelectedValue="{Binding SelectedAnalysisFilter}"
+                          Style="{StaticResource CompactComboBoxStyle}">
+                    <ComboBoxItem Tag="All"
+                                  Content="{Binding DataContext.AnalysisAllDisplay,
+                                                    RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" />
+                    <ComboBoxItem Tag="NotAnalyzed"
+                                  Content="{Binding DataContext.AnalysisNotAnalyzedDisplay,
+                                                    RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" />
+                    <ComboBoxItem Tag="Ready"
+                                  Content="{Binding DataContext.AnalysisReadyDisplay,
+                                                    RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" />
+                    <ComboBoxItem Tag="RequiresSelection"
+                                  Content="{Binding DataContext.AnalysisRequiresSelectionDisplay,
+                                                    RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" />
+                    <ComboBoxItem Tag="Problems"
+                                  Content="{Binding DataContext.AnalysisProblemsDisplay,
+                                                    RelativeSource={RelativeSource AncestorType={x:Type UserControl}}}" />
+                </ComboBox>
+
+                <ComboBox x:Name="InstalledFilterComboBox"
+                          Grid.Column="6"
+                          ItemsSource="{Binding InstalledFilterChoices}"
+                          ItemTemplate="{StaticResource LibraryChoiceTemplate}"
+                          SelectedIndex="0"
+                          SelectedItem="{Binding SelectedInstalledFilterChoice}"
+                          Style="{StaticResource CompactComboBoxStyle}" />
+
+                <ComboBox x:Name="GroupFilterComboBox"
+                          Grid.Column="8"
+                          ItemsSource="{Binding GroupFilterChoices}"
+                          ItemTemplate="{StaticResource LibraryChoiceTemplate}"
+                          SelectedIndex="0"
+                          SelectedItem="{Binding SelectedGroupFilterChoice}"
+                          Style="{StaticResource CompactComboBoxStyle}">
+                    <ComboBox.ContextMenu>
+                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                           RelativeSource={RelativeSource Self}}">
+                            <MenuItem Header="{Binding CreateGroupLabel}"
+                                      Command="{Binding CreateGroupCommand}" />
+                            <MenuItem Header="{Binding RenameGroupLabel}"
+                                      Command="{Binding RenameGroupCommand}" />
+                            <MenuItem Header="{Binding MoveUpLabel}"
+                                      Command="{Binding MoveGroupUpCommand}" />
+                            <MenuItem Header="{Binding MoveDownLabel}"
+                                      Command="{Binding MoveGroupDownCommand}" />
+                            <Separator />
+                            <MenuItem Header="{Binding DeleteGroupLabel}"
+                                      Command="{Binding DeleteGroupCommand}" />
+                        </ContextMenu>
+                    </ComboBox.ContextMenu>
+                </ComboBox>
+
+                <Button x:Name="AddGroupButton"
+                        Grid.Column="10"
+                        Content="{Binding AddGroupLabel}"
+                        Command="{Binding CreateGroupCommand}"
+                        Style="{StaticResource CompactButtonStyle}" />
+
+                <Button x:Name="RefreshLibraryButton"
+                        Grid.Column="12"
+                        MinWidth="96"
+                        Content="{Binding RefreshLabel}"
+                        Command="{Binding RefreshCommand}"
+                        ToolTip="{Binding RefreshToolTip}"
+                        Style="{StaticResource CompactButtonStyle}" />
+
+                <Button x:Name="MoreLibraryActionsButton"
+                        Grid.Column="14"
+                        Width="38"
+                        Content="⋯"
+                        Click="MoreActionsButton_OnClick"
+                        Style="{StaticResource CompactButtonStyle}">
+                    <Button.ContextMenu>
+                        <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                          RelativeSource={RelativeSource Self}}">
+                            <MenuItem Header="{Binding CheckNexusRelationsLabel}"
+                                      Command="{Binding CheckAllNexusRelationsCommand}" />
+                            <Separator />
+                            <MenuItem Header="{Binding AnalyzeAllLabel}"
+                                      Command="{Binding AnalyzeAllCommand}" />
+                            <MenuItem Header="{Binding CancelLabel}"
+                                      Command="{Binding CancelAnalysisCommand}" />
+                        </ContextMenu>
+                    </Button.ContextMenu>
+                </Button>
+
+                <TextBlock Grid.Column="16"
+                           VerticalAlignment="Center"
+                           Text="{Binding AnalysisProgressText}"
+                           Style="{StaticResource SecondaryTextStyle}" />
+            </Grid>
+        </ScrollViewer>
+
+        <Border Grid.Row="2"
+                Margin="0,0,0,10"
+                Padding="10,7"
+                Background="{DynamicResource SurfaceAltBrush}"
+                BorderBrush="{DynamicResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="4"
+                Visibility="{Binding HasBatchSelection,
+                                     Converter={StaticResource BooleanToVisibilityConverter}}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Margin="0,0,14,0"
+                           VerticalAlignment="Center"
+                           FontWeight="SemiBold"
+                           Text="{Binding SelectedCountLabel}" />
+                <Button Margin="0,0,8,0"
+                        Content="{Binding InstallSelectedLabel}"
+                        Command="{Binding InstallSelectedCommand}"
+                        Style="{StaticResource CompactButtonStyle}" />
+                <Button Margin="0,0,8,0"
+                        Content="{Binding RemoveSelectedLabel}"
+                        Command="{Binding RemoveSelectedCommand}"
+                        Style="{StaticResource CompactButtonStyle}" />
+                <Button Margin="0,0,8,0"
+                        Content="{Binding DeleteSelectedCompletelyLabel}"
+                        Command="{Binding DeleteSelectedCompletelyCommand}"
+                        Style="{StaticResource CompactButtonStyle}" />
+                <Button Content="{Binding ClearSelectionLabel}"
+                        Command="{Binding ClearSelectionCommand}"
+                        Style="{StaticResource CompactButtonStyle}" />
+            </StackPanel>
+        </Border>
+
+        <DataGrid x:Name="LibraryGrid"
+                  Grid.Row="3"
+                  ItemsSource="{Binding PackagesView}"
+                  SelectionMode="Single"
+                  SelectionUnit="FullRow"
+                  MouseDoubleClick="LibraryGrid_OnMouseDoubleClick"
+                  ContextMenuOpening="LibraryGrid_OnContextMenuOpening"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  AlternationCount="2"
+                  HorizontalScrollBarVisibility="Auto"
+                  VerticalScrollBarVisibility="Auto"
+                  ScrollViewer.CanContentScroll="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  VirtualizingPanel.IsVirtualizingWhenGrouping="True"
+                  EnableRowVirtualization="True"
+                  EnableColumnVirtualization="True">
+            <DataGrid.InputBindings>
+                <KeyBinding Key="Enter"
+                            Command="{Binding OpenSelectedModCommand}" />
+            </DataGrid.InputBindings>
+            <DataGrid.Resources>
+                <Style TargetType="DataGridRow"
+                       BasedOn="{StaticResource {x:Type DataGridRow}}">
+                    <Setter Property="Tag"
+                            Value="{Binding DataContext,
+                                            RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                    <Setter Property="ContextMenu">
+                        <Setter.Value>
+                            <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                               RelativeSource={RelativeSource Self}}">
+                                <MenuItem Header="{Binding OpenCardLabel}"
+                                          Command="{Binding OpenCardCommand}" />
+                                <MenuItem Header="{Binding CheckNexusRelationsLabel}"
+                                          Command="{Binding CheckNexusRelationsCommand}" />
+                                <Separator />
+                                <MenuItem Header="{Binding AnalyzeLabel}"
+                                          Command="{Binding AnalyzeCommand}" />
+                                <MenuItem Header="{Binding ReanalyzeLabel}"
+                                          Command="{Binding ReanalyzeCommand}" />
+                                <MenuItem Header="{Binding CheckInstallationLabel}"
+                                          Command="{Binding CheckInstallationCommand}" />
+                                <MenuItem Header="{Binding InstallLabel}"
+                                          Command="{Binding InstallCommand}"
+                                          Visibility="{Binding ShowInstallCommand,
+                                                               Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                <MenuItem Header="{Binding RemoveModLabel}"
+                                          Command="{Binding RemoveModCommand}"
+                                          Visibility="{Binding ShowRemoveCommand,
+                                                               Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                <Separator Tag="BatchCommandsSeparator" />
+                                <MenuItem Tag="InstallSelectedMenuItem"
+                                          Header="{Binding PlacementTarget.Tag.InstallSelectedContextLabel,
+                                                           RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"
+                                          Command="{Binding PlacementTarget.Tag.InstallSelectedCommand,
+                                                           RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}" />
+                                <MenuItem Tag="RemoveSelectedMenuItem"
+                                          Header="{Binding PlacementTarget.Tag.RemoveSelectedContextLabel,
+                                                           RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"
+                                          Command="{Binding PlacementTarget.Tag.RemoveSelectedCommand,
+                                                           RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}" />
+                                <MenuItem Tag="DeleteSelectedCompletelyMenuItem"
+                                          Header="{Binding PlacementTarget.Tag.DeleteSelectedCompletelyContextLabel,
+                                                           RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"
+                                          Command="{Binding PlacementTarget.Tag.DeleteSelectedCompletelyCommand,
+                                                           RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}" />
+                                <MenuItem Tag="ClearSelectionMenuItem"
+                                          Header="{Binding PlacementTarget.Tag.ClearSelectionLabel,
+                                                           RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}"
+                                          Command="{Binding PlacementTarget.Tag.ClearSelectionCommand,
+                                                           RelativeSource={RelativeSource AncestorType={x:Type ContextMenu}}}" />
+                                <MenuItem Header="{Binding RecoveryRequiredReason}"
+                                          IsEnabled="False"
+                                          Visibility="{Binding ShowRecoveryReason,
+                                                               Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                <Separator />
+                                <MenuItem Header="{Binding AssignGroupLabel}"
+                                          ItemsSource="{Binding GroupAssignments}">
+                                    <MenuItem.ItemContainerStyle>
+                                        <Style TargetType="MenuItem"
+                                               BasedOn="{StaticResource {x:Type MenuItem}}">
+                                            <Setter Property="Header"
+                                                    Value="{Binding Name}" />
+                                            <Setter Property="Command"
+                                                    Value="{Binding AssignCommand}" />
+                                        </Style>
+                                    </MenuItem.ItemContainerStyle>
+                                </MenuItem>
+                                <MenuItem Header="{Binding RemoveGroupLabel}"
+                                          Command="{Binding RemoveGroupCommand}" />
+                                <Separator />
+                                <MenuItem Header="{Binding OpenFolderLabel}"
+                                          Command="{Binding OpenFolderCommand}" />
+                                <MenuItem Header="{Binding OpenNexusLabel}"
+                                          Command="{Binding OpenNexusCommand}" />
+                                <MenuItem Header="{Binding CopyPathLabel}"
+                                          Command="{Binding CopyPathCommand}" />
+                                <Separator />
+                                <MenuItem Header="{Binding DeleteLibraryModFullyLabel}"
+                                          Command="{Binding DeleteLibraryModFullyCommand}"
+                                          Visibility="{Binding ShowFullDeleteCommand,
+                                                               Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                <MenuItem Header="{Binding DeleteLibraryRecordLabel}"
+                                          Command="{Binding DeleteLibraryRecordCommand}"
+                                          Visibility="{Binding CanDeleteLibraryRecord,
+                                                               Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            </ContextMenu>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </DataGrid.Resources>
+
+            <DataGrid.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.ContainerStyle>
+                        <Style TargetType="GroupItem">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="GroupItem">
+                                        <Expander IsExpanded="{Binding Name.IsExpanded,
+                                                                       Mode=TwoWay}">
+                                            <Expander.Header>
+                                                <Border Padding="10,7"
+                                                        Background="{DynamicResource SurfaceAltBrush}"
+                                                        BorderBrush="{DynamicResource DividerBrush}"
+                                                        BorderThickness="0,0,0,1">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <CheckBox Margin="0,0,8,0"
+                                                                  VerticalAlignment="Center"
+                                                                  IsThreeState="True"
+                                                                  IsChecked="{Binding Name.BatchSelectionState,
+                                                                                      Mode=OneWay}"
+                                                                  Click="GroupSelectionCheckBox_OnClick" />
+                                                        <TextBlock Style="{StaticResource LibraryGroupHeaderTextStyle}">
+                                                            <TextBlock.Text>
+                                                                <MultiBinding StringFormat="{}{0} — {1}">
+                                                                    <Binding Path="Name.Name" />
+                                                                    <Binding Path="ItemCount" />
+                                                                </MultiBinding>
+                                                            </TextBlock.Text>
+                                                            <TextBlock.ContextMenu>
+                                                                <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                                                                   RelativeSource={RelativeSource Self}}">
+                                                                    <MenuItem Header="{Binding Name.AnalyzeLabel}"
+                                                                              Command="{Binding Name.AnalyzeCommand}" />
+                                                                    <MenuItem Header="{Binding Name.CreateLabel}"
+                                                                              Command="{Binding Name.CreateCommand}" />
+                                                                    <MenuItem Header="{Binding Name.RenameLabel}"
+                                                                              Command="{Binding Name.RenameCommand}" />
+                                                                    <Separator />
+                                                                    <MenuItem Header="{Binding Name.ExpandLabel}"
+                                                                              Command="{Binding Name.ExpandCommand}" />
+                                                                    <MenuItem Header="{Binding Name.CollapseLabel}"
+                                                                              Command="{Binding Name.CollapseCommand}" />
+                                                                    <MenuItem Header="{Binding Name.MoveUpLabel}"
+                                                                              Command="{Binding Name.MoveUpCommand}" />
+                                                                    <MenuItem Header="{Binding Name.MoveDownLabel}"
+                                                                              Command="{Binding Name.MoveDownCommand}" />
+                                                                    <Separator />
+                                                                    <MenuItem Header="{Binding Name.DeleteLabel}"
+                                                                              Command="{Binding Name.DeleteCommand}" />
+                                                                </ContextMenu>
+                                                            </TextBlock.ContextMenu>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </Border>
+                                            </Expander.Header>
+                                            <ItemsPresenter />
+                                        </Expander>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </GroupStyle.ContainerStyle>
+                </GroupStyle>
+            </DataGrid.GroupStyle>
+
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Width="42"
+                                        MinWidth="42"
+                                        MaxWidth="42">
+                    <DataGridTemplateColumn.Header>
+                        <CheckBox HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  IsThreeState="True"
+                                  IsChecked="{Binding DataContext.AllVisibleSelected,
+                                                      RelativeSource={RelativeSource AncestorType={x:Type DataGrid}},
+                                                      Mode=OneWay}"
+                                  ToolTip="{Binding DataContext.SelectedCountLabel,
+                                                    RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                  Click="SelectAllVisible_OnClick" />
+                    </DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <CheckBox HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      IsChecked="{Binding IsBatchSelected,
+                                                          Mode=OneWay}"
+                                      Click="RowSelectionCheckBox_OnClick" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Binding="{Binding DisplayName}"
+                                    MinWidth="230"
+                                    Width="600">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock"
+                               BasedOn="{StaticResource TrimmedLibraryCellStyle}">
+                            <Setter Property="ToolTip"
+                                    Value="{Binding DisplayName}" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                    <DataGridTextColumn.Header>
+                        <TextBlock Text="{Binding DataContext.ColumnName,
+                                                 RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                    </DataGridTextColumn.Header>
+                </DataGridTextColumn>
+                <DataGridTextColumn Binding="{Binding Version}"
+                                    ElementStyle="{StaticResource LibraryVersionCellStyle}"
+                                    MinWidth="80"
+                                    Width="90">
+                    <DataGridTextColumn.Header>
+                        <TextBlock Text="{Binding DataContext.ColumnVersion,
+                                                 RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                    </DataGridTextColumn.Header>
+                </DataGridTextColumn>
+                <DataGridTextColumn Binding="{Binding AnalysisStateDisplay}"
+                                    ElementStyle="{StaticResource TrimmedLibraryCellStyle}"
+                                    MinWidth="135"
+                                    Width="160">
+                    <DataGridTextColumn.Header>
+                        <TextBlock Text="{Binding DataContext.AnalysisLabel,
+                                                 RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                    </DataGridTextColumn.Header>
+                </DataGridTextColumn>
+                <DataGridTemplateColumn Width="125"
+                                        MinWidth="110"
+                                        MaxWidth="140">
+                    <DataGridTemplateColumn.HeaderStyle>
+                        <Style TargetType="DataGridColumnHeader"
+                               BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+                            <Setter Property="HorizontalContentAlignment"
+                                    Value="Center" />
+                        </Style>
+                    </DataGridTemplateColumn.HeaderStyle>
+                    <DataGridTemplateColumn.Header>
+                        <TextBlock HorizontalAlignment="Center"
+                                   Text="{Binding DataContext.ColumnInstalled,
+                                                  RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                    </DataGridTemplateColumn.Header>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock HorizontalAlignment="Center"
+                                       FontSize="17"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding InstallationIndicator}"
+                                       ToolTip="{Binding InstallationToolTip}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <Border x:Name="LibraryFooter"
+                Grid.Row="4"
+                Margin="0,10,0,0"
+                Padding="0,8,0,0"
+                BorderBrush="{DynamicResource DividerBrush}"
+                BorderThickness="0,1,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="24" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="24" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding FoundPackagesSummary}"
+                           Style="{StaticResource SecondaryTextStyle}" />
+                <TextBlock Grid.Column="2"
+                           Text="{Binding SkippedFoldersSummary}"
+                           Style="{StaticResource SecondaryTextStyle}" />
+                <TextBlock Grid.Column="4"
+                           Text="{Binding LastUpdatedSummary}"
+                           Style="{StaticResource SecondaryTextStyle}" />
+                <TextBlock Grid.Column="5"
+                           Margin="16,0,0,0"
+                           HorizontalAlignment="Right"
+                           Text="{Binding StatusMessage}"
+                           TextTrimming="CharacterEllipsis"
+                           Style="{StaticResource SecondaryTextStyle}" />
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

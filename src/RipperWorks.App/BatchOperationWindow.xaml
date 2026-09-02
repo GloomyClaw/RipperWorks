@@ -1,0 +1,280 @@
+<Window x:Class="RipperWorks.App.BatchOperationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding Title}"
+        Width="980"
+        Height="680"
+        MinWidth="780"
+        MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        Style="{StaticResource {x:Type Window}}">
+    <Window.Resources>
+        <Style x:Key="BatchStateCellStyle"
+               TargetType="TextBlock">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Tone}" Value="Success">
+                    <Setter Property="Foreground"
+                            Value="{DynamicResource SuccessBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}" Value="Warning">
+                    <Setter Property="Foreground"
+                            Value="{DynamicResource WarningBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}" Value="Error">
+                    <Setter Property="Foreground"
+                            Value="{DynamicResource ErrorBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="BatchAddCellStyle"
+               TargetType="TextBlock">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource SuccessBrush}" />
+        </Style>
+        <Style x:Key="BatchReplaceCellStyle"
+               TargetType="TextBlock">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource WarningBrush}" />
+        </Style>
+        <Style x:Key="BatchConflictCellStyle"
+               TargetType="TextBlock">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource ConflictBrush}" />
+        </Style>
+        <Style x:Key="BatchBlockedCellStyle"
+               TargetType="TextBlock">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource ErrorBrush}" />
+        </Style>
+        <Style TargetType="ProgressBar">
+            <Setter Property="Background"
+                    Value="{DynamicResource ControlBackgroundBrush}" />
+            <Setter Property="Foreground"
+                    Value="{DynamicResource AccentBrush}" />
+            <Setter Property="BorderBrush"
+                    Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ProgressBar">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <Grid ClipToBounds="True">
+                                <Rectangle x:Name="PART_Track"
+                                           Fill="{TemplateBinding Background}" />
+                                <Rectangle x:Name="PART_Indicator"
+                                           Fill="{TemplateBinding Foreground}"
+                                           HorizontalAlignment="Left" />
+                            </Grid>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="24">
+        <Grid x:Name="PlanPanel"
+              Visibility="{Binding IsPlan,
+                                   Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Text="{Binding Title}"
+                       Style="{StaticResource PageTitleStyle}" />
+            <StackPanel Grid.Row="1"
+                        Margin="0,12,0,12">
+                <TextBlock Text="{Binding PlanSummary}"
+                           TextWrapping="Wrap" />
+                <Border Margin="0,10,0,0"
+                        Padding="10"
+                        Background="{DynamicResource SurfaceAltBrush}"
+                        BorderBrush="{DynamicResource ErrorBrush}"
+                        BorderThickness="1"
+                        Visibility="{Binding HasCycle,
+                                             Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <TextBlock Text="{Binding CycleText}"
+                               Foreground="{DynamicResource ErrorBrush}"
+                               TextWrapping="Wrap" />
+                </Border>
+            </StackPanel>
+            <DataGrid x:Name="InstallPlanGrid"
+                      Grid.Row="2"
+                      ItemsSource="{Binding PlanRows}"
+                      Visibility="{Binding IsInstall,
+                                           Converter={StaticResource BooleanToVisibilityConverter}}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="{Binding DataContext.NumberHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding Number}" Width="48" />
+                    <DataGridTextColumn Header="{Binding DataContext.NameHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding Name}" Width="*" />
+                    <DataGridTextColumn Header="{Binding DataContext.StateHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding State}"
+                                        ElementStyle="{StaticResource BatchStateCellStyle}"
+                                        Width="180" />
+                    <DataGridTextColumn Header="{Binding DataContext.AddHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding Add}"
+                                        ElementStyle="{StaticResource BatchAddCellStyle}"
+                                        Width="85" />
+                    <DataGridTextColumn Header="{Binding DataContext.ReplaceHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding Replace}"
+                                        ElementStyle="{StaticResource BatchReplaceCellStyle}"
+                                        Width="85" />
+                    <DataGridTextColumn Header="{Binding DataContext.ConflictsHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding Conflicts}"
+                                        ElementStyle="{StaticResource BatchConflictCellStyle}"
+                                        Width="85" />
+                    <DataGridTextColumn Header="{Binding DataContext.BlockedHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding Blocked}"
+                                        ElementStyle="{StaticResource BatchBlockedCellStyle}"
+                                        Width="95" />
+                </DataGrid.Columns>
+            </DataGrid>
+            <DataGrid x:Name="RemovalPlanGrid"
+                      Grid.Row="2"
+                      ItemsSource="{Binding PlanRows}"
+                      Visibility="{Binding IsRemoval,
+                                           Converter={StaticResource BooleanToVisibilityConverter}}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="{Binding DataContext.NumberHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding Number}" Width="48" />
+                    <DataGridTextColumn Header="{Binding DataContext.NameHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding Name}" Width="*" />
+                    <DataGridTextColumn Header="{Binding DataContext.StateHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding State}"
+                                        ElementStyle="{StaticResource BatchStateCellStyle}"
+                                        Width="180" />
+                    <DataGridTextColumn Header="{Binding DataContext.ManagedFilesHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding ManagedFiles}" Width="130" />
+                    <DataGridTextColumn Header="{Binding DataContext.FilesToDeleteHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding FilesToDelete}" Width="90" />
+                    <DataGridTextColumn Header="{Binding DataContext.FilesToRestoreHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding FilesToRestore}" Width="115" />
+                    <DataGridTextColumn Header="{Binding DataContext.RelatedHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding Related}" Width="220" />
+                </DataGrid.Columns>
+            </DataGrid>
+            <StackPanel Grid.Row="3"
+                        Margin="0,16,0,0"
+                        HorizontalAlignment="Right"
+                        Orientation="Horizontal">
+                <Button MinWidth="110"
+                        Margin="0,0,8,0"
+                        Content="{Binding CancelLabel}"
+                        Click="Cancel_OnClick" />
+                <Button MinWidth="150"
+                        Content="{Binding ExecuteLabel}"
+                        IsEnabled="{Binding CanExecute}"
+                        Style="{StaticResource PrimaryButtonStyle}"
+                        Click="Execute_OnClick" />
+            </StackPanel>
+        </Grid>
+
+        <Grid Visibility="{Binding IsProgress,
+                                   Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Text="{Binding Title}"
+                       Style="{StaticResource PageTitleStyle}" />
+            <TextBlock Grid.Row="1"
+                       Margin="0,14,0,4"
+                       Text="{Binding ProgressText}"
+                       Style="{StaticResource SectionTitleStyle}" />
+            <TextBlock Grid.Row="2"
+                       Margin="0,0,0,12"
+                       Text="{Binding CurrentModLabel}"
+                       TextTrimming="CharacterEllipsis"
+                       ToolTip="{Binding CurrentMod}" />
+            <ProgressBar Grid.Row="3"
+                         Height="12"
+                         Minimum="0"
+                         Maximum="100"
+                         Value="{Binding ProgressValue, Mode=OneWay}" />
+            <TextBlock Grid.Row="4"
+                       Margin="0,12,0,0"
+                       Text="{Binding ProgressCounters}"
+                       TextWrapping="Wrap" />
+            <Button Grid.Row="6"
+                    MinWidth="190"
+                    HorizontalAlignment="Right"
+                    Content="{Binding CancelAfterCurrentLabel}"
+                    Click="CancelAfterCurrent_OnClick" />
+        </Grid>
+
+        <Grid Visibility="{Binding IsResult,
+                                   Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Text="{Binding ResultTitle}"
+                       Style="{StaticResource PageTitleStyle}" />
+            <TextBlock Grid.Row="1"
+                       Margin="0,12,0,12"
+                       Text="{Binding ResultSummary}"
+                       TextWrapping="Wrap" />
+            <DataGrid x:Name="ResultGrid"
+                      Grid.Row="2"
+                      ItemsSource="{Binding ResultRows}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="{Binding DataContext.NameHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding Name}" Width="*" />
+                    <DataGridTextColumn Header="{Binding DataContext.StateHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding State}"
+                                        ElementStyle="{StaticResource BatchStateCellStyle}"
+                                        Width="180" />
+                    <DataGridTextColumn Header="{Binding DataContext.ReasonHeader,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding Reason}" Width="2*" />
+                </DataGrid.Columns>
+            </DataGrid>
+            <Button Grid.Row="3"
+                    Margin="0,16,0,0"
+                    MinWidth="110"
+                    HorizontalAlignment="Right"
+                    Content="{Binding CloseLabel}"
+                    Click="Close_OnClick" />
+        </Grid>
+    </Grid>
+</Window>

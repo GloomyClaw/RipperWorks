@@ -1,0 +1,128 @@
+<Window x:Class="RipperWorks.App.InstallPlanWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{Binding Title}"
+        Width="900"
+        Height="650"
+        MinWidth="720"
+        MinHeight="480"
+        Style="{StaticResource {x:Type Window}}"
+        WindowStartupLocation="CenterOwner">
+    <Window.Resources>
+        <Style x:Key="InstallPlanActionStyle"
+               TargetType="TextBlock">
+            <Setter Property="Foreground"
+                    Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Tone}" Value="Success">
+                    <Setter Property="Foreground"
+                            Value="{DynamicResource SuccessBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}" Value="Warning">
+                    <Setter Property="Foreground"
+                            Value="{DynamicResource WarningBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}" Value="Overlay">
+                    <Setter Property="Foreground"
+                            Value="{DynamicResource ConflictBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}" Value="Conflict">
+                    <Setter Property="Foreground"
+                            Value="{DynamicResource ConflictBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Tone}" Value="Error">
+                    <Setter Property="Foreground"
+                            Value="{DynamicResource ErrorBrush}" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="{Binding Title}"
+                   Style="{StaticResource PageTitleStyle}" />
+
+        <Border Grid.Row="1"
+                Margin="0,16,0,14"
+                Style="{StaticResource CardStyle}">
+            <WrapPanel>
+                <TextBlock Margin="0,0,24,6"
+                           Text="{Binding AddSummary}" />
+                <TextBlock Margin="0,0,24,6"
+                           Text="{Binding ReplaceSummary}" />
+                <TextBlock Margin="0,0,24,6"
+                           Text="{Binding OverlaySummary}" />
+                <TextBlock Margin="0,0,24,6"
+                           Text="{Binding ConflictSummary}" />
+                <TextBlock Margin="0,0,0,6"
+                           Text="{Binding BlockedSummary}" />
+            </WrapPanel>
+        </Border>
+
+        <Grid Grid.Row="2">
+            <DataGrid ItemsSource="{Binding Entries}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="{Binding DataContext.PathLabel,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding Path}"
+                                        Width="3*" />
+                    <DataGridTemplateColumn Width="160">
+                        <DataGridTemplateColumn.Header>
+                            <TextBlock Text="{Binding DataContext.ActionLabel,
+                                                     RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}" />
+                        </DataGridTemplateColumn.Header>
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Action}"
+                                           Style="{StaticResource InstallPlanActionStyle}" />
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="{Binding DataContext.ReasonLabel,
+                                                        RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                        Binding="{Binding Reason}"
+                                        Width="2*" />
+                </DataGrid.Columns>
+            </DataGrid>
+            <TextBlock Margin="18"
+                       Text="{Binding ErrorMessage}"
+                       TextWrapping="Wrap"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       Visibility="{Binding HasError,
+                                            Converter={StaticResource BooleanToVisibilityConverter}}" />
+        </Grid>
+
+        <TextBlock Grid.Row="3"
+                   Margin="0,14,0,0"
+                   Text="{Binding Disclaimer}"
+                   TextWrapping="Wrap"
+                   Foreground="{DynamicResource TextSecondaryBrush}" />
+
+        <WrapPanel Grid.Row="4"
+                   Margin="0,16,0,0"
+                   HorizontalAlignment="Right">
+            <Button Margin="4"
+                    IsEnabled="{Binding CanInstall}"
+                    Content="{Binding InstallLabel}"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Click="InstallButton_OnClick" />
+            <Button x:Name="CloseInstallPlanButton"
+                    MinWidth="100"
+                    Margin="4"
+                    Content="{Binding CloseLabel}"
+                    Click="CloseButton_OnClick" />
+        </WrapPanel>
+    </Grid>
+</Window>
