@@ -37,7 +37,6 @@ public sealed class RipperWorksPaths
         Path.Combine(DataRoot, "downloader.db");
     public string CatalogDatabasePath =>
         Path.Combine(DataRoot, "catalog.db");
-    public string NexusKeyPath => Path.Combine(DataRoot, "nexus.key");
     public string DownloaderDirectory =>
         Path.Combine(DataRoot, "Downloads");
 

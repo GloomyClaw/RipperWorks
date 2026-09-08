@@ -17,7 +17,6 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        DataContextChanged += MainWindow_OnDataContextChanged;
         NexusBrowser.IsVisibleChanged += NexusBrowser_OnIsVisibleChanged;
         Closed += MainWindow_OnClosed;
     }
@@ -27,17 +26,6 @@ public partial class MainWindow : Window
         base.OnActivated(e);
         if (DataContext is MainWindowViewModel viewModel)
             viewModel.Settings.RefreshLaunchAvailability();
-    }
-
-    private void MainWindow_OnDataContextChanged(
-        object sender,
-        DependencyPropertyChangedEventArgs e)
-    {
-        if (e.OldValue is MainWindowViewModel oldViewModel)
-            oldViewModel.Settings.SettingsSaved -= Settings_OnSettingsSaved;
-        if (e.NewValue is MainWindowViewModel newViewModel)
-            newViewModel.Settings.SettingsSaved += Settings_OnSettingsSaved;
-        NexusApiKeyBox.Password = string.Empty;
     }
 
     private async void NexusBrowser_OnIsVisibleChanged(
@@ -136,19 +124,6 @@ public partial class MainWindow : Window
         Closed -= MainWindow_OnClosed;
         NexusBrowser.Dispose();
     }
-
-    private void NexusApiKeyBox_OnPasswordChanged(
-        object sender,
-        RoutedEventArgs e)
-    {
-        if (DataContext is MainWindowViewModel viewModel)
-            viewModel.Settings.NexusApiKey = NexusApiKeyBox.Password;
-    }
-
-    private void Settings_OnSettingsSaved(
-        object? sender,
-        RipperWorks.Core.RipperWorksSettings e) =>
-        NexusApiKeyBox.Password = string.Empty;
 
     private void SettingsCardsGrid_OnSizeChanged(
         object sender,

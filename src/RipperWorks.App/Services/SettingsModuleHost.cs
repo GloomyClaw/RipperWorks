@@ -1,3 +1,4 @@
+using System.IO;
 using System.Net.Http;
 using RipperWorks.App.ViewModels;
 using RipperWorks.Core;
@@ -17,7 +18,6 @@ public sealed class SettingsModuleHost : ISettingsModuleBoundary
     private LocalizationService? _localization;
     private SessionEventLog? _sessionEvents;
     private ThemeService? _theme;
-    private DpapiProtectedCredentialStore? _credentials;
     private readonly IGameMaintenanceService? _gameMaintenance;
     private readonly IGameMaintenanceManagedStateProvider? _managedStateProvider;
     private HttpClient? _httpClient;
@@ -46,7 +46,6 @@ public sealed class SettingsModuleHost : ISettingsModuleBoundary
         Require(_session).Current;
     public LocalizationService Localization => Require(_localization);
     public IUserDialogService Dialogs { get; private set; } = null!;
-    public IProtectedCredentialStore Credentials => Require(_credentials);
     public INexusApiClient NexusApi => Require(_nexusApi);
     public INexusUpdateApiClient NexusUpdateApi => Require(_nexusApi);
     public SettingsViewModel Presentation => Require(_presentation);
@@ -72,9 +71,15 @@ public sealed class SettingsModuleHost : ISettingsModuleBoundary
             _theme.Start();
             _theme.Apply(settings.Theme);
             Dialogs = new UserDialogService(_localization);
-            _credentials =
-                DpapiProtectedCredentialStore.CreateProductionLayout(_paths);
-            await _credentials.RunStartupMigrationAsync(cancellationToken);
+            var cleanupFailures = await ObsoleteNexusCredentialCleanup.RunAsync(
+                _paths,
+                cancellationToken);
+            foreach (var failure in cleanupFailures)
+            {
+                _logger.Log(
+                    "ObsoleteNexusCredentialCleanup",
+                    new IOException(failure));
+            }
             _httpClient = new HttpClient();
             _nexusApi = new NexusApiClient(_httpClient);
             _presentation = new SettingsViewModel(
@@ -86,8 +91,6 @@ public sealed class SettingsModuleHost : ISettingsModuleBoundary
                 _gameOperations,
                 _logger,
                 RecordSessionEvent,
-                _credentials,
-                _nexusApi,
                 new NxmProtocolRegistration(),
                 Environment.ProcessPath,
                 _gameMaintenance,
@@ -143,11 +146,9 @@ public sealed class SettingsModuleHost : ISettingsModuleBoundary
         _sessionEvents = null;
         _session?.Dispose();
         _session = null;
-        _credentials?.Dispose();
-        _credentials = null;
+        _nexusApi = null;
         _httpClient?.Dispose();
         _httpClient = null;
-        _nexusApi = null;
     }
 
     private T Require<T>(T? value) where T : class

@@ -60,8 +60,7 @@ public static class ApplicationComposition
                 paths.CatalogDatabasePath,
                 organizerRepository,
                 downloaderRepository,
-                () => downloadsRef,
-                () => settings.Credentials);
+                () => downloadsRef);
         ILibraryModuleBoundary library =
             new LibraryModuleHost(
                 paths,

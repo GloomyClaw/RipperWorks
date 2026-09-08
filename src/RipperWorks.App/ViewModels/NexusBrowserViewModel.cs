@@ -23,7 +23,6 @@ public sealed class NexusBrowserViewModel : ObservableObject, IDisposable
         INexusModLocalStateService? localStateService = null,
         LocalizationService? localization = null,
         INexusApiClient? nexusApi = null,
-        IProtectedCredentialStore? credentials = null,
         INexusRequirementRelationsService? requirementRelationsService = null,
         INexusRequirementRefreshService? requirementRefreshService = null,
         Action<NexusModIdentity>? requestNavigateDownloads = null)
@@ -38,10 +37,27 @@ public sealed class NexusBrowserViewModel : ObservableObject, IDisposable
             loc,
             url => NavigationRequested?.Invoke(url),
             nexusApi,
-            credentials,
             requirementRelationsService,
             requirementRefreshService,
             requestNavigateDownloads);
+    }
+
+    public NexusBrowserViewModel(
+        IShortlistStore? shortlistStore,
+        INexusModLocalStateService? localStateService,
+        LocalizationService? localization,
+        INexusRequirementRelationsService relationsService,
+        INexusRequirementRefreshService? requirementRefreshService = null,
+        Action<NexusModIdentity>? requestNavigateDownloads = null)
+        : this(
+            shortlistStore,
+            localStateService,
+            localization,
+            null,
+            relationsService,
+            requirementRefreshService,
+            requestNavigateDownloads)
+    {
     }
 
     public NexusBrowserPanelViewModel Panel { get; }

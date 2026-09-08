@@ -18,7 +18,7 @@ public sealed class SettingsViewModel :
     private readonly ThemeService _theme;
     private readonly IUserDialogService _dialogs;
     private readonly IFolderPickerService _folderPicker;
-    private readonly SettingsCredentialController _credentialsUi;
+    private readonly SettingsNxmProtocolController _nxmProtocol;
     private readonly SynchronizationContext? _uiContext;
     private SettingsGameProfileController _game = null!;
     private string _cyberpunk2077Root;
@@ -26,7 +26,6 @@ public sealed class SettingsViewModel :
     private string _downloaderTempRoot;
     private int _concurrentDownloads;
     private NexusBrowserMode _selectedNexusBrowserMode;
-    private string _nexusApiKey = string.Empty;
     private string _nexusStatus = string.Empty;
     private string _selectedLanguage;
     private string _selectedTheme;
@@ -43,8 +42,6 @@ public sealed class SettingsViewModel :
         IGameOperationsModuleBoundary? gameOperations = null,
         StartupExceptionLogger? logger = null,
         Action<string, string?>? recordSessionEvent = null,
-        IProtectedCredentialStore? credentials = null,
-        INexusApiClient? nexusApi = null,
         INxmProtocolRegistration? nxmProtocol = null,
         string? executablePath = null,
         RipperWorks.GameMaintenance.IGameMaintenanceService? maintenanceService = null,
@@ -58,11 +55,9 @@ public sealed class SettingsViewModel :
         // Capture presentation context at construction (WPF UI thread).
         // SettingsSession never depends on Dispatcher; we marshal here.
         _uiContext = SynchronizationContext.Current;
-        _credentialsUi = new SettingsCredentialController(
-            credentials,
-            nexusApi,
-            localization,
+        _nxmProtocol = new SettingsNxmProtocolController(
             nxmProtocol,
+            localization,
             executablePath ?? Environment.ProcessPath ?? string.Empty);
         _currentGameProfile = gameOperations?.CurrentGameProfile;
         var settings = session.Current;
@@ -87,21 +82,16 @@ public sealed class SettingsViewModel :
         SaveCommand = new AsyncRelayCommand(SaveAsync);
         NavigateToDiagnosticsCommand = new RelayCommand(
             () => RequestNavigateDiagnostics?.Invoke());
-        ValidateNexusApiKeyCommand = new AsyncRelayCommand(
-            () => _credentialsUi.ValidateAsync(
-                NexusApiKey,
-                value => NexusStatus = value),
-            () => _credentialsUi.CanValidate);
         RegisterNxmCommand = new RelayCommand(
-            () => _credentialsUi.Register(
+            () => _nxmProtocol.Register(
                 value => NexusStatus = value,
                 () => OnPropertyChanged(nameof(NxmRegistrationStatus))),
-            () => _credentialsUi.CanRegister);
+            () => _nxmProtocol.CanRegister);
         UnregisterNxmCommand = new RelayCommand(
-            () => _credentialsUi.Unregister(
+            () => _nxmProtocol.Unregister(
                 value => NexusStatus = value,
                 () => OnPropertyChanged(nameof(NxmRegistrationStatus))),
-            () => _credentialsUi.CanUnregister);
+            () => _nxmProtocol.CanUnregister);
         _game = new SettingsGameProfileController(
             gameOperations,
             this,
@@ -133,10 +123,7 @@ public sealed class SettingsViewModel :
     }
 
     /// <summary>
-    /// Raised only when the Settings JSON save succeeded and either no
-    /// credential save was attempted or the credential save also succeeded.
-    /// MainWindow clears PasswordBox on this event — partial credential
-    /// failure must not raise it.
+    /// Raised after the Settings JSON save succeeds.
     /// </summary>
     public event EventHandler<RipperWorksSettings>? SettingsSaved;
     public RipperWorksSettings CurrentSettings => _session.Current;
@@ -182,11 +169,6 @@ public sealed class SettingsViewModel :
         get => _selectedNexusBrowserMode;
         set => SetProperty(ref _selectedNexusBrowserMode, value);
     }
-    public string NexusApiKey
-    {
-        get => _nexusApiKey;
-        set => SetProperty(ref _nexusApiKey, value);
-    }
     public string NexusStatus
     {
         get => _nexusStatus;
@@ -226,15 +208,13 @@ public sealed class SettingsViewModel :
     public string PathsSectionLabel => _localization.Get("PathsSection");
     public string InterfaceSectionLabel => _localization.Get("InterfaceSection");
     public string NexusSectionLabel => _localization.Get("NexusSection");
-    public string NexusApiKeyLabel => _localization.Get("NexusApiKey");
-    public string ValidateNexusApiKeyLabel => _localization.Get("ValidateNexusApiKey");
     public string DownloaderTempFolderLabel => _localization.Get("DownloaderTempFolder");
     public string ConcurrentDownloadsLabel => _localization.Get("ConcurrentDownloads");
     public string NexusBrowserLabel => _localization.Get("NexusBrowserLabel");
     public string NxmHandlerLabel => _localization.Get("NxmHandler");
     public string RegisterNxmLabel => _localization.Get("RegisterNxm");
     public string UnregisterNxmLabel => _localization.Get("UnregisterNxm");
-    public string NxmRegistrationStatus => _credentialsUi.RegistrationStatus;
+    public string NxmRegistrationStatus => _nxmProtocol.RegistrationStatus;
     public string GameFolderLabel => _localization.Get("GameFolder");
     public string LibraryFolderLabel => _localization.Get("LibraryFolder");
     public string LanguageLabel => _localization.Get("Language");
@@ -271,15 +251,13 @@ public sealed class SettingsViewModel :
     public AsyncRelayCommand ValidateGameCommand { get; }
     public AsyncRelayCommand LaunchGameCommand { get; }
     public AsyncRelayCommand SaveCommand { get; }
-    public AsyncRelayCommand ValidateNexusApiKeyCommand { get; }
     public RelayCommand RegisterNxmCommand { get; }
     public RelayCommand UnregisterNxmCommand { get; }
 
-    public async Task InitializeDownloaderSettingsAsync()
+    public Task InitializeDownloaderSettingsAsync()
     {
-        NexusApiKey = string.Empty;
-        await _credentialsUi.InitializeStatusAsync(value => NexusStatus = value);
         OnPropertyChanged(nameof(NxmRegistrationStatus));
+        return Task.CompletedTask;
     }
 
     public void RefreshLaunchAvailability() =>
@@ -327,7 +305,6 @@ public sealed class SettingsViewModel :
             _localization,
             _theme,
             _dialogs,
-            _credentialsUi,
             targetGameRoot,
             normalizedLibraryRoot,
             DownloaderTempRoot,
@@ -335,10 +312,7 @@ public sealed class SettingsViewModel :
             SelectedNexusBrowserMode,
             SelectedLanguage,
             SelectedTheme,
-            NexusApiKey,
             ApplySnapshotToBuffer,
-            value => NexusApiKey = value,
-            value => NexusStatus = value,
             value => StatusMessage = value,
             settings => SettingsSaved?.Invoke(this, settings)).ConfigureAwait(true);
     }
@@ -474,8 +448,7 @@ public sealed class SettingsViewModel :
     private static readonly string[] LocalizedPropertyNames =
     [
         nameof(Header), nameof(PathsSectionLabel), nameof(InterfaceSectionLabel),
-        nameof(NexusSectionLabel), nameof(NexusApiKeyLabel),
-        nameof(ValidateNexusApiKeyLabel), nameof(DownloaderTempFolderLabel),
+        nameof(NexusSectionLabel), nameof(DownloaderTempFolderLabel),
         nameof(ConcurrentDownloadsLabel), nameof(NexusBrowserLabel),
         nameof(NxmHandlerLabel), nameof(RegisterNxmLabel),
         nameof(UnregisterNxmLabel), nameof(NxmRegistrationStatus),

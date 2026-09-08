@@ -9,35 +9,13 @@ namespace RipperWorks.Downloader;
 public sealed class NexusApiClient(HttpClient client)
     : INexusApiClient, INexusUpdateApiClient
 {
-    private static readonly Uri BaseUri =
-        new("https://api.nexusmods.com/");
-
-    public async Task<NexusUserInfo> ValidateApiKeyAsync(
-        string apiKey,
-        CancellationToken cancellationToken = default)
-    {
-        using var response = await SendAsync(
-            "v1/users/validate.json",
-            apiKey,
-            cancellationToken);
-        var value = await response.Content.ReadFromJsonAsync<UserDto>(
-            cancellationToken: cancellationToken)
-            ?? throw new InvalidDataException("Nexus returned an empty response.");
-        return new(
-            value.Name ?? "Nexus user",
-            value.IsPremium,
-            value.IsSupporter);
-    }
-
     public async Task<NexusModMetadata> GetModAsync(
         string gameDomain,
         long modId,
-        string apiKey,
         CancellationToken cancellationToken = default)
     {
         using var modResponse = await SendAsync(
             $"v1/games/{Uri.EscapeDataString(gameDomain)}/mods/{modId}.json",
-            apiKey,
             cancellationToken);
         using var modDocument = await JsonDocument.ParseAsync(
             await modResponse.Content.ReadAsStreamAsync(cancellationToken),
@@ -46,7 +24,6 @@ public sealed class NexusApiClient(HttpClient client)
 
         using var filesResponse = await SendAsync(
             $"v1/games/{Uri.EscapeDataString(gameDomain)}/mods/{modId}/files.json",
-            apiKey,
             cancellationToken);
         using var filesDocument = await JsonDocument.ParseAsync(
             await filesResponse.Content.ReadAsStreamAsync(cancellationToken),
@@ -89,12 +66,10 @@ public sealed class NexusApiClient(HttpClient client)
     public async Task<NexusModMetadata> GetModMetadataOnlyAsync(
         string gameDomain,
         long modId,
-        string apiKey,
         CancellationToken cancellationToken = default)
     {
         using var modResponse = await SendAsync(
             $"v1/games/{Uri.EscapeDataString(gameDomain)}/mods/{modId}.json",
-            apiKey,
             cancellationToken);
         using var modDocument = await JsonDocument.ParseAsync(
             await modResponse.Content.ReadAsStreamAsync(cancellationToken),
@@ -116,7 +91,6 @@ public sealed class NexusApiClient(HttpClient client)
 
     public async Task<Uri> GetDownloadLinkAsync(
         NxmLink link,
-        string apiKey,
         CancellationToken cancellationToken = default)
     {
         var relative =
@@ -125,7 +99,6 @@ public sealed class NexusApiClient(HttpClient client)
             $"?key={Uri.EscapeDataString(link.Key)}&expires={link.Expires}";
         using var response = await SendAsync(
             relative,
-            apiKey,
             cancellationToken);
         return await ReadDownloadUriAsync(response, cancellationToken);
     }
@@ -133,12 +106,10 @@ public sealed class NexusApiClient(HttpClient client)
     public async Task<IReadOnlySet<long>> GetModFileIdsAsync(
         string gameDomain,
         long modId,
-        string apiKey,
         CancellationToken cancellationToken = default)
     {
         using var response = await SendAsync(
             $"v1/games/{Uri.EscapeDataString(gameDomain)}/mods/{modId}/files.json",
-            apiKey,
             cancellationToken);
         using var document = await JsonDocument.ParseAsync(
             await response.Content.ReadAsStreamAsync(cancellationToken),
@@ -159,7 +130,6 @@ public sealed class NexusApiClient(HttpClient client)
         GetFileVersionByGameScopedIdAsync(
             string gameDomain,
             long numericFileId,
-            string apiKey,
             CancellationToken cancellationToken = default)
     {
         try
@@ -167,7 +137,6 @@ public sealed class NexusApiClient(HttpClient client)
             using var response = await SendAsync(
                 $"v3/games/{Uri.EscapeDataString(gameDomain)}/" +
                 $"mod-file-versions/{numericFileId}",
-                apiKey,
                 cancellationToken);
             using var document = await JsonDocument.ParseAsync(
                 await response.Content.ReadAsStreamAsync(cancellationToken),
@@ -188,12 +157,10 @@ public sealed class NexusApiClient(HttpClient client)
     public async Task<IReadOnlyList<NexusUpdateFileVersion>>
         GetFileVersionsAsync(
             string modFileUuid,
-            string apiKey,
             CancellationToken cancellationToken = default)
     {
         using var response = await SendAsync(
             $"v3/mod-files/{Uri.EscapeDataString(modFileUuid)}/versions",
-            apiKey,
             cancellationToken);
         using var document = await JsonDocument.ParseAsync(
             await response.Content.ReadAsStreamAsync(cancellationToken),
@@ -215,7 +182,6 @@ public sealed class NexusApiClient(HttpClient client)
         string gameDomain,
         long modId,
         long fileId,
-        string apiKey,
         CancellationToken cancellationToken = default)
     {
         var relative =
@@ -223,7 +189,6 @@ public sealed class NexusApiClient(HttpClient client)
             $"{modId}/files/{fileId}/download_link.json";
         using var response = await SendAsync(
             relative,
-            apiKey,
             cancellationToken);
         return await ReadDownloadUriAsync(response, cancellationToken);
     }
@@ -244,48 +209,15 @@ public sealed class NexusApiClient(HttpClient client)
             : new Uri(url);
     }
 
-    private async Task<HttpResponseMessage> SendAsync(
+    private Task<HttpResponseMessage> SendAsync(
         string relative,
-        string apiKey,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(apiKey))
-            throw new InvalidOperationException("Nexus API key is not configured.");
-        for (var attempt = 0; ; attempt++)
-        {
-            using var request = new HttpRequestMessage(
-                HttpMethod.Get,
-                new Uri(BaseUri, relative));
-            request.Headers.Add("apikey", apiKey.Trim());
-            NexusClientIdentity.ApplyHeaders(request);
-            var response = await client.SendAsync(request, cancellationToken);
-            if (response.IsSuccessStatusCode)
-                return response;
-            if (response.StatusCode == (HttpStatusCode)429 &&
-                attempt == 0)
-            {
-                var delay = response.Headers.RetryAfter?.Delta ??
-                    (response.Headers.RetryAfter?.Date - DateTimeOffset.UtcNow) ??
-                    TimeSpan.FromSeconds(30);
-                response.Dispose();
-                if (delay < TimeSpan.Zero)
-                    delay = TimeSpan.Zero;
-                await Task.Delay(delay, cancellationToken);
-                continue;
-            }
-            var statusCode = response.StatusCode;
-            response.Dispose();
-            if (statusCode is HttpStatusCode.Unauthorized or
-                HttpStatusCode.Forbidden)
-            {
-                throw new NexusAuthenticationException(
-                    "Nexus rejected the API key.");
-            }
-            var message = statusCode == (HttpStatusCode)429
-                ? "Nexus request limit exceeded. Try again later."
-                : $"Nexus API error {(int)statusCode}.";
-            throw new HttpRequestException(message, null, statusCode);
-        }
+        _ = client;
+        _ = relative;
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromException<HttpResponseMessage>(
+            new NexusAuthenticatedFeatureUnavailableException());
     }
 
     private static NexusUpdateFileVersion? ReadUpdateFileVersion(
@@ -353,11 +285,6 @@ public sealed class NexusApiClient(HttpClient client)
             ? DateTimeOffset.FromUnixTimeSeconds(timestamp.Value)
             : null;
 
-    private sealed record UserDto(
-        [property: JsonPropertyName("name")] string? Name,
-        [property: JsonPropertyName("is_premium")] bool IsPremium,
-        [property: JsonPropertyName("is_supporter")] bool IsSupporter);
-
     private sealed record DownloadDto(
         [property: JsonPropertyName("URI")] string? Uri);
 }
@@ -370,7 +297,6 @@ public sealed record NexusUrlResolution(
 public sealed class NexusDownloadCoordinator(
     IDownloaderRepository repository,
     INexusApiClient nexus,
-    IProtectedCredentialStore credentials,
     IDownloadQueue queue,
     DownloaderTechnicalLog? technicalLog = null)
     : INexusEntryDownloadCoordinator
@@ -384,25 +310,18 @@ public sealed class NexusDownloadCoordinator(
         {
             throw new InvalidOperationException("Unsupported Nexus URL.");
         }
-        return await credentials.UseAsync(
-            CredentialIdentity.NexusDefault,
-            async (apiKey, token) =>
-            {
-                var metadata = await nexus.GetModAsync(
-                    page.GameDomain,
-                    page.ModId,
-                    apiKey,
-                    token);
-                var selected = page.FileId is null
-                    ? metadata.Files.Count == 1 ? metadata.Files[0] : null
-                    : metadata.Files.FirstOrDefault(file =>
-                        file.FileId == page.FileId.Value);
-                return new NexusUrlResolution(
-                    metadata,
-                    selected,
-                    selected is null && metadata.Files.Count > 1);
-            },
+        var metadata = await nexus.GetModAsync(
+            page.GameDomain,
+            page.ModId,
             cancellationToken);
+        var selected = page.FileId is null
+            ? metadata.Files.Count == 1 ? metadata.Files[0] : null
+            : metadata.Files.FirstOrDefault(file =>
+                file.FileId == page.FileId.Value);
+        return new NexusUrlResolution(
+            metadata,
+            selected,
+            selected is null && metadata.Files.Count > 1);
     }
 
     public async Task<NexusModMetadata> GetModMetadataAsync(
@@ -410,9 +329,9 @@ public sealed class NexusDownloadCoordinator(
         long modId,
         CancellationToken cancellationToken = default)
     {
-        return await credentials.UseAsync(
-            CredentialIdentity.NexusDefault,
-            (apiKey, token) => nexus.GetModMetadataOnlyAsync(gameDomain, modId, apiKey, token),
+        return await nexus.GetModMetadataOnlyAsync(
+            gameDomain,
+            modId,
             cancellationToken);
     }
 
@@ -450,15 +369,10 @@ public sealed class NexusDownloadCoordinator(
         {
             throw new InvalidOperationException("Invalid NXM link.");
         }
-        return await credentials.UseAsync(
-            CredentialIdentity.NexusDefault,
-            async (apiKey, token) =>
-            {
-                var metadata = await nexus.GetModAsync(
+        var metadata = await nexus.GetModAsync(
                     link.GameDomain,
                     link.ModId,
-                    apiKey,
-                    token);
+                    cancellationToken);
                 var file = metadata.Files.FirstOrDefault(candidate =>
                     candidate.FileId == link.FileId) ??
                     new NexusFileInfo(
@@ -473,17 +387,14 @@ public sealed class NexusDownloadCoordinator(
                     file,
                     $"https://www.nexusmods.com/{link.GameDomain}/mods/{link.ModId}" +
                     $"?file_id={link.FileId}",
-                    token);
+                    cancellationToken);
                 if (entry.Status == DownloaderStatus.Downloaded)
                     return entry;
                 var downloadUri = await nexus.GetDownloadLinkAsync(
                     link,
-                    apiKey,
-                    token);
-                await queue.EnqueueAsync(entry, downloadUri, token);
+                    cancellationToken);
+                await queue.EnqueueAsync(entry, downloadUri, cancellationToken);
                 return entry;
-            },
-            cancellationToken);
     }
 
     public async Task<DownloaderEntry> ProcessNxmForEntryAsync(
@@ -512,15 +423,10 @@ public sealed class NexusDownloadCoordinator(
             throw new InvalidOperationException(
                 "The selected Nexus file belongs to another mod.");
         }
-        return await credentials.UseAsync(
-            CredentialIdentity.NexusDefault,
-            async (apiKey, token) =>
-            {
-                var metadata = await nexus.GetModAsync(
+        var metadata = await nexus.GetModAsync(
                     link.GameDomain,
                     link.ModId,
-                    apiKey,
-                    token);
+                    cancellationToken);
                 var file = metadata.Files.FirstOrDefault(candidate =>
                     candidate.FileId == link.FileId) ??
                     new NexusFileInfo(
@@ -531,16 +437,13 @@ public sealed class NexusDownloadCoordinator(
                         0,
                         null);
                 ApplyMetadata(entry, metadata, file);
-                await repository.SaveEntryAsync(entry, token);
+                await repository.SaveEntryAsync(entry, cancellationToken);
                 technicalLog?.Invoke("MetadataUpdated", entry, null);
                 var downloadUri = await nexus.GetDownloadLinkAsync(
                     link,
-                    apiKey,
-                    token);
-                await queue.EnqueueAsync(entry, downloadUri, token);
+                    cancellationToken);
+                await queue.EnqueueAsync(entry, downloadUri, cancellationToken);
                 return entry;
-            },
-            cancellationToken);
     }
 
     public async Task<DownloaderEntry> QueueKnownFileAsync(
@@ -558,15 +461,10 @@ public sealed class NexusDownloadCoordinator(
             throw new InvalidOperationException(
                 "A precise Nexus file has not been selected.");
         }
-        return await credentials.UseAsync(
-            CredentialIdentity.NexusDefault,
-            async (apiKey, token) =>
-            {
-                var metadata = await nexus.GetModAsync(
+        var metadata = await nexus.GetModAsync(
                     entry.GameDomain,
                     modId,
-                    apiKey,
-                    token);
+                    cancellationToken);
                 var file = metadata.Files.FirstOrDefault(candidate =>
                     candidate.FileId == fileId) ??
                     new NexusFileInfo(
@@ -577,17 +475,14 @@ public sealed class NexusDownloadCoordinator(
                         0,
                         null);
                 ApplyMetadata(entry, metadata, file);
-                await repository.SaveEntryAsync(entry, token);
+                await repository.SaveEntryAsync(entry, cancellationToken);
                 var downloadUri = await nexus.GetDownloadLinkAsync(
                     entry.GameDomain,
                     modId,
                     fileId,
-                    apiKey,
-                    token);
-                await queue.EnqueueAsync(entry, downloadUri, token);
+                    cancellationToken);
+                await queue.EnqueueAsync(entry, downloadUri, cancellationToken);
                 return entry;
-            },
-            cancellationToken);
     }
 
     public async Task<DownloaderEntry> QueueDirectForEntryAsync(

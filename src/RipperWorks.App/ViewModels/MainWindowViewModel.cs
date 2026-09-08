@@ -18,7 +18,6 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         IShortlistStore? shortlistStore = null,
         INexusModLocalStateService? localStateService = null,
         INexusApiClient? nexusApi = null,
-        IProtectedCredentialStore? credentials = null,
         INexusRequirementRelationsService? requirementRelationsService = null,
         INexusRequirementRefreshService? requirementRefreshService = null)
     {
@@ -32,7 +31,6 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             localStateService,
             localization,
             nexusApi,
-            credentials,
             requirementRelationsService,
             requirementRefreshService,
             identity =>

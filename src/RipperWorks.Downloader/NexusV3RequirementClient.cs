@@ -54,17 +54,14 @@ public sealed class NexusV3RequirementClient : INexusModernRequirementClient
 {
     public const string DefaultBaseUrl = "https://api.nexusmods.com/v3";
     private readonly HttpClient _client;
-    private readonly IProtectedCredentialStore? _credentials;
     private readonly string _baseUrl;
 
     public NexusV3RequirementClient(
         HttpClient client,
-        IProtectedCredentialStore? credentials = null,
         string baseUrl = DefaultBaseUrl)
     {
         ArgumentNullException.ThrowIfNull(client);
         _client = client;
-        _credentials = credentials;
         _baseUrl = baseUrl.TrimEnd('/');
     }
 
@@ -86,42 +83,21 @@ public sealed class NexusV3RequirementClient : INexusModernRequirementClient
                 $"Unsupported game ID {mod.GameId}."));
         }
 
-        if (_credentials == null)
-        {
-            return await ExecuteQueryWithKeyAsync(mod, gameDomain, apiKey: null, cancellationToken).ConfigureAwait(false);
-        }
-
-        try
-        {
-            return await _credentials.UseAsync(
-                CredentialIdentity.NexusDefault,
-                (apiKey, ct) => ExecuteQueryWithKeyAsync(mod, gameDomain, apiKey, ct),
-                cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            return NexusModernRequirementResult.Failed(new(
-                NexusRequirementFailureKind.Cancelled,
-                "Operation cancelled."));
-        }
-        catch (Exception)
-        {
-            return NexusModernRequirementResult.Failed(new(
-                NexusRequirementFailureKind.Transport,
-                "Nexus credential is unavailable or unreadable."));
-        }
+        return await ExecuteQueryAsync(
+            mod,
+            gameDomain,
+            cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<NexusModernRequirementResult> ExecuteQueryWithKeyAsync(
+    private async Task<NexusModernRequirementResult> ExecuteQueryAsync(
         NexusModIdentity mod,
         string gameDomain,
-        string? apiKey,
         CancellationToken cancellationToken)
     {
         try
         {
             // Step 1: GET /v3/games/{domain}/mods/{modId}
-            var modRes = await GetV3DocAsync($"/games/{gameDomain}/mods/{mod.ModId}", apiKey, cancellationToken).ConfigureAwait(false);
+            var modRes = await GetV3DocAsync($"/games/{gameDomain}/mods/{mod.ModId}", cancellationToken).ConfigureAwait(false);
             if (modRes.Failure != null) return NexusModernRequirementResult.Failed(modRes.Failure);
             using var modDoc = modRes.Doc;
             if (modDoc == null || !modDoc.RootElement.TryGetProperty("data", out var modData))
@@ -134,7 +110,7 @@ public sealed class NexusV3RequirementClient : INexusModernRequirementClient
             var globalModId = modData.GetProperty("id").GetString();
 
             // Step 2: GET /v3/mods/{globalModId}/files
-            var filesRes = await GetV3DocAsync($"/mods/{globalModId}/files", apiKey, cancellationToken).ConfigureAwait(false);
+            var filesRes = await GetV3DocAsync($"/mods/{globalModId}/files", cancellationToken).ConfigureAwait(false);
             if (filesRes.Failure != null) return NexusModernRequirementResult.Failed(filesRes.Failure);
             using var filesDoc = filesRes.Doc;
             if (filesDoc == null || !filesDoc.RootElement.TryGetProperty("data", out var filesData))
@@ -166,7 +142,7 @@ public sealed class NexusV3RequirementClient : INexusModernRequirementClient
             var activeFileId = activeFiles[0].GetProperty("id").GetString();
 
             // Step 3: GET /v3/mod-files/{activeFileId}/versions
-            var versionsRes = await GetV3DocAsync($"/mod-files/{activeFileId}/versions", apiKey, cancellationToken).ConfigureAwait(false);
+            var versionsRes = await GetV3DocAsync($"/mod-files/{activeFileId}/versions", cancellationToken).ConfigureAwait(false);
             if (versionsRes.Failure != null) return NexusModernRequirementResult.Failed(versionsRes.Failure);
             using var versionsDoc = versionsRes.Doc;
             if (versionsDoc == null || !versionsDoc.RootElement.TryGetProperty("data", out var versionsData))
@@ -214,7 +190,7 @@ public sealed class NexusV3RequirementClient : INexusModernRequirementClient
             }
 
             // Step 4: GET /v3/mod-file-versions/{versionId}/dependencies/ranges
-            var depRes = await GetV3DocAsync($"/mod-file-versions/{versionId}/dependencies/ranges", apiKey, cancellationToken).ConfigureAwait(false);
+            var depRes = await GetV3DocAsync($"/mod-file-versions/{versionId}/dependencies/ranges", cancellationToken).ConfigureAwait(false);
             if (depRes.Failure != null) return NexusModernRequirementResult.Failed(depRes.Failure);
             using var depDoc = depRes.Doc;
             if (depDoc == null || !depDoc.RootElement.TryGetProperty("dependency_definitions", out var definitions))
@@ -377,15 +353,10 @@ public sealed class NexusV3RequirementClient : INexusModernRequirementClient
 
     private async Task<HttpDocResult> GetV3DocAsync(
         string relativePath,
-        string? apiKey,
         CancellationToken cancellationToken)
     {
         var url = $"{_baseUrl}{relativePath}";
         using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        if (!string.IsNullOrWhiteSpace(apiKey))
-        {
-            request.Headers.Add("apikey", apiKey);
-        }
         NexusClientIdentity.ApplyHeaders(request);
 
         using var response = await _client.SendAsync(request, cancellationToken).ConfigureAwait(false);

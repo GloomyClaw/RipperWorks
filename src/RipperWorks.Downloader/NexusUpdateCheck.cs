@@ -4,8 +4,7 @@ using RipperWorks.Core;
 namespace RipperWorks.Downloader;
 
 public sealed class NexusModUpdateCheckClient(
-    INexusUpdateApiClient api,
-    IProtectedCredentialStore credentials)
+    INexusUpdateApiClient api)
     : INexusModUpdateCheckClient
 {
     public async Task<IReadOnlyDictionary<long, NexusModUpdateCheckResult>>
@@ -15,37 +14,23 @@ public sealed class NexusModUpdateCheckClient(
             IReadOnlyCollection<long> numericFileIds,
             CancellationToken cancellationToken = default)
     {
-        try
-        {
-            return await credentials.UseAsync(
-                CredentialIdentity.NexusDefault,
-                (apiKey, token) =>
-                    CheckModWithKeyAsync(
-                        gameDomain,
-                        modId,
-                        numericFileIds,
-                        apiKey,
-                        token),
-                cancellationToken);
-        }
-        catch (InvalidOperationException exception)
-        {
-            throw new NexusAuthenticationException(exception.Message);
-        }
+        return await CheckModUnauthenticatedAsync(
+            gameDomain,
+            modId,
+            numericFileIds,
+            cancellationToken);
     }
 
     private async Task<IReadOnlyDictionary<long, NexusModUpdateCheckResult>>
-        CheckModWithKeyAsync(
+        CheckModUnauthenticatedAsync(
             string gameDomain,
             long modId,
             IReadOnlyCollection<long> numericFileIds,
-            string apiKey,
             CancellationToken cancellationToken)
     {
         var publishedFileIds = await api.GetModFileIdsAsync(
             gameDomain,
             modId,
-            apiKey,
             cancellationToken);
         var results = new Dictionary<long, NexusModUpdateCheckResult>();
         foreach (var numericFileId in numericFileIds.Distinct())
@@ -60,7 +45,6 @@ public sealed class NexusModUpdateCheckClient(
             var current = await api.GetFileVersionByGameScopedIdAsync(
                 gameDomain,
                 numericFileId,
-                apiKey,
                 cancellationToken);
             if (current is null)
             {
@@ -72,7 +56,6 @@ public sealed class NexusModUpdateCheckClient(
 
             var chain = (await api.GetFileVersionsAsync(
                     current.ModFileUuid,
-                    apiKey,
                     cancellationToken))
                 .Where(value => string.Equals(
                     value.ModFileUuid,
@@ -334,15 +317,15 @@ public sealed class NexusModUpdateCheckService(
                     throw new OperationCanceledException(
                         cancellationToken);
                 }
-                if (exception is NexusAuthenticationException)
+                if (exception is NexusAuthenticatedFeatureUnavailableException)
                 {
                     Interlocked.Exchange(
                         ref authenticationFailed,
                         1);
                 }
                 var message =
-                    exception is NexusAuthenticationException
-                        ? "Nexus отклонил API-ключ."
+                    exception is NexusAuthenticatedFeatureUnavailableException
+                        ? NexusAuthenticatedFeatureAvailability.UnavailableMessage
                         : exception.Message;
                 foreach (var entry in groupEntries.Where(
                              entry => !saved.Contains(entry.Id)))

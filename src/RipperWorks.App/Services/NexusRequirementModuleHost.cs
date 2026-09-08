@@ -12,7 +12,6 @@ public sealed class NexusRequirementModuleHost :
     private readonly OrganizerRepository _organizer;
     private readonly IDownloaderRepository _downloader;
     private readonly Func<IDownloadsModuleBoundary?>? _downloads;
-    private readonly Func<IProtectedCredentialStore?>? _credentials;
     private HttpClient? _httpClient;
     private NexusRequirementSyncService? _service;
     private bool _started;
@@ -23,14 +22,12 @@ public sealed class NexusRequirementModuleHost :
         string catalogDatabasePath,
         OrganizerRepository organizer,
         IDownloaderRepository downloader,
-        Func<IDownloadsModuleBoundary?>? downloads = null,
-        Func<IProtectedCredentialStore?>? credentials = null)
+        Func<IDownloadsModuleBoundary?>? downloads = null)
     {
         _catalogDatabasePath = catalogDatabasePath;
         _organizer = organizer;
         _downloader = downloader;
         _downloads = downloads;
-        _credentials = credentials;
     }
 
     public string Name => "NexusRequirements";
@@ -43,9 +40,7 @@ public sealed class NexusRequirementModuleHost :
         cancellationToken.ThrowIfCancellationRequested();
 
         _httpClient = new HttpClient();
-        var v3Client = new NexusV3RequirementClient(
-            _httpClient,
-            _credentials?.Invoke());
+        var v3Client = new NexusV3RequirementClient(_httpClient);
         _service = new NexusRequirementSyncService(
             new NexusGraphQlRequirementClient(_httpClient),
             new NexusRequirementSnapshotStore(_catalogDatabasePath),

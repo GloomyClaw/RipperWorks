@@ -15,7 +15,6 @@ public sealed class NexusBrowserPanelViewModel : ObservableObject, IDisposable
     private readonly LocalizationService _localization = null!;
     private readonly Action<string> _requestNavigate = null!;
     private readonly INexusApiClient? _nexusApi;
-    private readonly IProtectedCredentialStore? _credentials;
     private readonly INexusRequirementRelationsService? _requirementRelationsService;
     private readonly INexusRequirementRefreshService? _requirementRefreshService;
     private readonly Action<NexusModIdentity>? _requestNavigateDownloads;
@@ -28,19 +27,20 @@ public sealed class NexusBrowserPanelViewModel : ObservableObject, IDisposable
     private bool _isCurrentModShortlisted;
     private string _currentModTitle = string.Empty, _currentModSubtitle = string.Empty;
     private string? _currentModAuthor, _currentModVersion, _currentModCategory, _metadataErrorText, _requirementsErrorText, _shortlistOperationErrorText, _installedVersion, _localVersionsText, _localStatusText;
-    private bool _isMetadataLoading, _isRequirementsLoading, _isRequirementsAmbiguous, _isInDownloader, _isDownloaded, _isInLibrary, _isInstalled, _isDisposed;
+    private bool _isMetadataLoading, _metadataUnavailable, _isRequirementsLoading, _isRequirementsAmbiguous, _isInDownloader, _isDownloaded, _isInLibrary, _isInstalled, _isDisposed;
     private long _currentContextGeneration, _localStateQueryGeneration, _requirementsQueryGeneration, _shortlistLoadGeneration;
 
     public NexusBrowserPanelViewModel(
         IShortlistStore shortlistStore, INexusModLocalStateService localStateService, LocalizationService localization, Action<string> requestNavigate,
-        INexusApiClient? nexusApi = null, IProtectedCredentialStore? credentials = null, INexusRequirementRelationsService? requirementRelationsService = null, INexusRequirementRefreshService? requirementRefreshService = null,
+        INexusApiClient? nexusApi = null, INexusRequirementRelationsService? requirementRelationsService = null, INexusRequirementRefreshService? requirementRefreshService = null,
         Action<NexusModIdentity>? requestNavigateDownloads = null)
     {
         _shortlistStore = shortlistStore ?? throw new ArgumentNullException(nameof(shortlistStore));
         _localStateService = localStateService ?? throw new ArgumentNullException(nameof(localStateService));
         _localization = localization ?? throw new ArgumentNullException(nameof(localization));
         _requestNavigate = requestNavigate ?? throw new ArgumentNullException(nameof(requestNavigate));
-        _nexusApi = nexusApi; _credentials = credentials; _requirementRelationsService = requirementRelationsService; _requirementRefreshService = requirementRefreshService;
+        _nexusApi = nexusApi;
+        _requirementRelationsService = requirementRelationsService; _requirementRefreshService = requirementRefreshService;
         _requestNavigateDownloads = requestNavigateDownloads;
 
         SelectCurrentModTabCommand = new RelayCommand(() => SelectedTab = NexusPanelTab.CurrentMod);
@@ -52,6 +52,26 @@ public sealed class NexusBrowserPanelViewModel : ObservableObject, IDisposable
 
         _localization.LanguageChanged += Localization_OnLanguageChanged;
         _ = LoadShortlistAsync();
+    }
+
+    public NexusBrowserPanelViewModel(
+        IShortlistStore shortlistStore,
+        INexusModLocalStateService localStateService,
+        LocalizationService localization,
+        Action<string> requestNavigate,
+        INexusRequirementRelationsService relationsService,
+        INexusRequirementRefreshService? requirementRefreshService = null,
+        Action<NexusModIdentity>? requestNavigateDownloads = null)
+        : this(
+            shortlistStore,
+            localStateService,
+            localization,
+            requestNavigate,
+            null,
+            relationsService,
+            requirementRefreshService,
+            requestNavigateDownloads)
+    {
     }
 
     public ObservableCollection<ShortlistEntryItemViewModel> ShortlistItems { get; } = [];
@@ -145,6 +165,66 @@ public sealed class NexusBrowserPanelViewModel : ObservableObject, IDisposable
         _ = FetchModRequirementsAsync(context, contextGen, reqGen);
     }
 
+    private async Task FetchModMetadataAsync(NexusPageContext context, long contextGen)
+    {
+        if (_nexusApi is null || _isDisposed) return;
+        try
+        {
+            IsMetadataLoading = true;
+            MetadataErrorText = null;
+            _metadataUnavailable = false;
+
+            var metadata = await _nexusApi.GetModMetadataOnlyAsync(
+                context.GameDomain,
+                context.NexusModId);
+            if (contextGen != Volatile.Read(ref _currentContextGeneration) || _isDisposed) return;
+
+            _currentMetadata = metadata;
+            UpdateCurrentModMetadataPresentation();
+
+            await _shortlistGate.WaitAsync();
+            try
+            {
+                if (contextGen != Volatile.Read(ref _currentContextGeneration) || _isDisposed) return;
+                var isStillShortlisted = await _shortlistStore.ContainsAsync(context.GameDomain, context.NexusModId);
+                if (_isDisposed || contextGen != Volatile.Read(ref _currentContextGeneration)) return;
+                if (isStillShortlisted)
+                {
+                    await _shortlistStore.AddAsync(
+                        context.GameDomain,
+                        context.NexusModId,
+                        metadata.Name,
+                        metadata.Author,
+                        metadata.Version);
+                    if (!_isDisposed && contextGen == Volatile.Read(ref _currentContextGeneration))
+                        await LoadShortlistAsync();
+                }
+            }
+            finally { _shortlistGate.Release(); }
+        }
+        catch (NexusAuthenticatedFeatureUnavailableException)
+        {
+            if (contextGen == Volatile.Read(ref _currentContextGeneration) && !_isDisposed)
+            {
+                _metadataUnavailable = true;
+                MetadataErrorText = _localization.Get("NexusAuthenticatedFunctionUnavailable");
+            }
+        }
+        catch
+        {
+            if (contextGen == Volatile.Read(ref _currentContextGeneration) && !_isDisposed)
+            {
+                _metadataUnavailable = false;
+                MetadataErrorText = _localization.Get("NexusBrowserPanelMetadataError");
+            }
+        }
+        finally
+        {
+            if (contextGen == Volatile.Read(ref _currentContextGeneration) && !_isDisposed)
+                IsMetadataLoading = false;
+        }
+    }
+
     private void UpdateCurrentModMetadataPresentation()
     {
         if (_isDisposed) return;
@@ -177,39 +257,6 @@ public sealed class NexusBrowserPanelViewModel : ObservableObject, IDisposable
 
         CurrentModTitle = $"Nexus Mod #{_currentPageContext.NexusModId}";
         CurrentModAuthor = null; CurrentModVersion = null; CurrentModCategory = null;
-    }
-
-    private async Task FetchModMetadataAsync(NexusPageContext context, long contextGen)
-    {
-        if (_nexusApi is null || _credentials is null || _isDisposed) return;
-        try
-        {
-            IsMetadataLoading = true; MetadataErrorText = null;
-            var status = await _credentials.GetStatusAsync(CredentialIdentity.NexusDefault);
-            if (_isDisposed || status.Status != CredentialPresenceStatus.Present) return;
-
-            var metadata = await _credentials.UseAsync(CredentialIdentity.NexusDefault, (apiKey, token) => _nexusApi.GetModMetadataOnlyAsync(context.GameDomain, context.NexusModId, apiKey, token));
-            if (contextGen != Volatile.Read(ref _currentContextGeneration) || _isDisposed) return;
-
-            _currentMetadata = metadata;
-            UpdateCurrentModMetadataPresentation();
-
-            await _shortlistGate.WaitAsync();
-            try
-            {
-                if (contextGen != Volatile.Read(ref _currentContextGeneration) || _isDisposed) return;
-                var isStillShortlisted = await _shortlistStore.ContainsAsync(context.GameDomain, context.NexusModId);
-                if (_isDisposed || contextGen != Volatile.Read(ref _currentContextGeneration)) return;
-                if (isStillShortlisted)
-                {
-                    await _shortlistStore.AddAsync(context.GameDomain, context.NexusModId, metadata.Name, metadata.Author, metadata.Version);
-                    if (!_isDisposed && contextGen == Volatile.Read(ref _currentContextGeneration)) await LoadShortlistAsync();
-                }
-            }
-            finally { _shortlistGate.Release(); }
-        }
-        catch { if (contextGen == Volatile.Read(ref _currentContextGeneration) && !_isDisposed) MetadataErrorText = _localization.Get("NexusBrowserPanelMetadataError"); }
-        finally { if (contextGen == Volatile.Read(ref _currentContextGeneration) && !_isDisposed) IsMetadataLoading = false; }
     }
 
     private async Task FetchModRequirementsAsync(NexusPageContext context, long contextGen, long reqGen)
@@ -358,7 +405,7 @@ public sealed class NexusBrowserPanelViewModel : ObservableObject, IDisposable
     {
         if (_isDisposed) return;
         _currentMetadata = null; CurrentModAuthor = null; CurrentModVersion = null; CurrentModCategory = null;
-        IsMetadataLoading = false; MetadataErrorText = null; IsRequirementsLoading = false; RequirementsErrorText = null; _isRequirementsAmbiguous = false;
+        IsMetadataLoading = false; MetadataErrorText = null; _metadataUnavailable = false; IsRequirementsLoading = false; RequirementsErrorText = null; _isRequirementsAmbiguous = false;
         ForwardRequirements.Clear(); ReverseRequirements.Clear();
         OnPropertyChanged(nameof(ForwardRequirementsHeader)); OnPropertyChanged(nameof(ReverseRequirementsHeader));
         OnPropertyChanged(nameof(HasForwardRequirements)); OnPropertyChanged(nameof(HasReverseRequirements)); OnPropertyChanged(nameof(HasAnyRequirements));
@@ -492,7 +539,8 @@ public sealed class NexusBrowserPanelViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(NoRequirementsMessage));
 
         if (!string.IsNullOrEmpty(ShortlistOperationErrorText)) ShortlistOperationErrorText = _localization.Get("NexusBrowserPanelOperationError");
-        if (!string.IsNullOrEmpty(MetadataErrorText)) MetadataErrorText = _localization.Get("NexusBrowserPanelMetadataError");
+        if (!string.IsNullOrEmpty(MetadataErrorText)) MetadataErrorText = _localization.Get(
+            _metadataUnavailable ? "NexusAuthenticatedFunctionUnavailable" : "NexusBrowserPanelMetadataError");
         if (!string.IsNullOrEmpty(RequirementsErrorText)) RequirementsErrorText = _localization.Get("NexusBrowserPanelRequirementsError");
 
         UpdateCurrentModMetadataPresentation();

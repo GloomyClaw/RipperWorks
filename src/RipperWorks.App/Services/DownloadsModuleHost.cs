@@ -84,7 +84,6 @@ public sealed class DownloadsModuleHost : IDownloadsModuleBoundary
         var nexus = new NexusDownloadCoordinator(
             _repository,
             _settings.NexusApi,
-            _settings.Credentials,
             queue,
             downloadLog);
         var manualQueue = new ManualBrowserQueue(_repository, nexus);
@@ -97,8 +96,7 @@ public sealed class DownloadsModuleHost : IDownloadsModuleBoundary
         var updateCheck = new NexusModUpdateCheckService(
             _repository,
             new NexusModUpdateCheckClient(
-                _settings.NexusUpdateApi,
-                _settings.Credentials));
+                _settings.NexusUpdateApi));
         _presentation = new DownloadsViewModel(
             _repository,
             nexus,

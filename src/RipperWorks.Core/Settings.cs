@@ -47,3 +47,9 @@ public sealed record RipperWorksSettings
     public NexusBrowserMode NexusBrowser { get; init; } =
         NexusBrowserMode.Internal;
 }
+
+public interface ISettingsSnapshotProvider
+{
+    RipperWorksSettings Current { get; }
+    event EventHandler<RipperWorksSettings>? SnapshotChanged;
+}

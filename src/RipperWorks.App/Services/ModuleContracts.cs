@@ -30,7 +30,6 @@ public interface ISettingsModuleBoundary : IApplicationModule
     RipperWorksSettings CurrentSettings { get; }
     LocalizationService Localization { get; }
     IUserDialogService Dialogs { get; }
-    IProtectedCredentialStore Credentials { get; }
     INexusApiClient NexusApi { get; }
     INexusUpdateApiClient NexusUpdateApi { get; }
     SettingsViewModel Presentation { get; }

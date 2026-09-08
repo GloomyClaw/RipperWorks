@@ -5,8 +5,7 @@ using RipperWorks.Infrastructure;
 namespace RipperWorks.App.Services;
 
 /// <summary>
-/// Settings JSON + optional credential save orchestration for presentation.
-/// Partial success: JSON publish does not roll back when credential save fails.
+/// Settings JSON save orchestration for presentation.
 /// </summary>
 public static class SettingsSaveFlow
 {
@@ -15,7 +14,6 @@ public static class SettingsSaveFlow
         LocalizationService localization,
         ThemeService theme,
         IUserDialogService dialogs,
-        SettingsCredentialController credentialsUi,
         string gameRoot,
         string libraryRoot,
         string downloaderTempRoot,
@@ -23,10 +21,7 @@ public static class SettingsSaveFlow
         NexusBrowserMode nexusBrowser,
         string language,
         string themeName,
-        string typedNexusKey,
         Action<RipperWorksSettings> applySnapshot,
-        Action<string> setNexusApiKey,
-        Action<string> setNexusStatus,
         Action<string> setStatusMessage,
         Action<RipperWorksSettings> raiseSettingsSaved)
     {
@@ -66,25 +61,6 @@ public static class SettingsSaveFlow
             localization.SetLanguage(settings.Language);
             theme.Apply(settings.Theme);
 
-            if (!string.IsNullOrWhiteSpace(typedNexusKey))
-            {
-                string? credentialStatus = null;
-                var credentialSaved = await credentialsUi.TrySaveTypedKeyAsync(
-                    typedNexusKey,
-                    () => setNexusApiKey(string.Empty),
-                    value =>
-                    {
-                        credentialStatus = value;
-                        setNexusStatus(value);
-                    }).ConfigureAwait(true);
-                if (!credentialSaved)
-                {
-                    // JSON published; keep typed key / PasswordBox; no SettingsSaved.
-                    setStatusMessage(credentialStatus ?? string.Empty);
-                    return;
-                }
-            }
-
             setStatusMessage(localization.Get("SettingsSaved"));
             raiseSettingsSaved(settings);
         }
@@ -92,7 +68,7 @@ public static class SettingsSaveFlow
         {
             var message = string.Format(
                 localization.Get("SettingsError"),
-                CredentialUiSanitizer.Sanitize(exception.Message, typedNexusKey));
+                exception.Message);
             setStatusMessage(message);
             dialogs.ShowError(message);
         }

@@ -221,11 +221,6 @@ public sealed record NexusPageLink(
     long ModId,
     long? FileId);
 
-public sealed record NexusUserInfo(
-    string Name,
-    bool IsPremium,
-    bool IsSupporter);
-
 public sealed record NexusFileInfo(
     long FileId,
     string FileName,
@@ -365,33 +360,22 @@ public interface ILibraryArchiveLookup
 
 public interface INexusApiClient
 {
-    Task<NexusUserInfo> ValidateApiKeyAsync(
-        string apiKey,
-        CancellationToken cancellationToken = default);
     Task<NexusModMetadata> GetModAsync(
         string gameDomain,
         long modId,
-        string apiKey,
         CancellationToken cancellationToken = default);
     Task<NexusModMetadata> GetModMetadataOnlyAsync(
         string gameDomain,
         long modId,
-        string apiKey,
-        CancellationToken cancellationToken = default) =>
-        GetModAsync(gameDomain, modId, apiKey, cancellationToken);
+        CancellationToken cancellationToken = default);
     Task<Uri> GetDownloadLinkAsync(
         NxmLink link,
-        string apiKey,
         CancellationToken cancellationToken = default);
     Task<Uri> GetDownloadLinkAsync(
         string gameDomain,
         long modId,
         long fileId,
-        string apiKey,
-        CancellationToken cancellationToken = default) =>
-        Task.FromException<Uri>(
-            new NotSupportedException(
-                "Direct Nexus file links are not supported by this client."));
+        CancellationToken cancellationToken = default);
 }
 
 public interface INexusUpdateApiClient
@@ -399,16 +383,13 @@ public interface INexusUpdateApiClient
     Task<IReadOnlySet<long>> GetModFileIdsAsync(
         string gameDomain,
         long modId,
-        string apiKey,
         CancellationToken cancellationToken = default);
     Task<NexusUpdateFileVersion?> GetFileVersionByGameScopedIdAsync(
         string gameDomain,
         long numericFileId,
-        string apiKey,
         CancellationToken cancellationToken = default);
     Task<IReadOnlyList<NexusUpdateFileVersion>> GetFileVersionsAsync(
         string modFileUuid,
-        string apiKey,
         CancellationToken cancellationToken = default);
 }
 
@@ -431,8 +412,15 @@ public interface INexusModUpdateCheckService
         CancellationToken cancellationToken = default);
 }
 
-public sealed class NexusAuthenticationException(string message)
-    : HttpRequestException(message);
+public static class NexusAuthenticatedFeatureAvailability
+{
+    public const string UnavailableMessage =
+        "Authenticated Nexus functionality is temporarily unavailable while " +
+        "OAuth integration is pending Nexus Mods approval.";
+}
+
+public sealed class NexusAuthenticatedFeatureUnavailableException()
+    : HttpRequestException(NexusAuthenticatedFeatureAvailability.UnavailableMessage);
 
 public interface INexusEntryDownloadCoordinator
 {
@@ -448,9 +436,6 @@ public interface INexusEntryDownloadCoordinator
         Uri downloadUri,
         CancellationToken cancellationToken = default);
 }
-
-// RF-03: plaintext-returning INexusCredentialStore removed.
-// Production uses IProtectedCredentialStore (see Credentials.cs).
 
 public interface IDownloadTransport
 {

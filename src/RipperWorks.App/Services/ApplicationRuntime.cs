@@ -524,7 +524,6 @@ public sealed class ApplicationRuntime : IAsyncDisposable
             _shortlistStore,
             _localStateService,
             _settings.NexusApi,
-            _settings.Credentials,
             _nexusRequirements,
             _nexusRequirements);
     }

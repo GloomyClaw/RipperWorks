@@ -6,7 +6,6 @@ using RipperWorks.Core;
 
 namespace RipperWorks.Infrastructure;
 
-// RF-03: DpapiNexusCredentialStore replaced by DpapiProtectedCredentialStore.
 
 public sealed class NxmProtocolRegistration : INxmProtocolRegistration
 {
