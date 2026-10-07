@@ -12,7 +12,7 @@ public static class CatalogSchemaContract
 
 internal static class CatalogDatabaseSchema
 {
-    public const int CurrentVersion = 4;
+    public const int CurrentVersion = 5;
 
     internal static async Task<long> ReadAndValidateSupportedVersionAsync(
         SqliteConnection connection,
@@ -252,6 +252,12 @@ internal static class CatalogDatabaseSchema
                 TargetClickableUrl TEXT NULL
                     CHECK (TargetClickableUrl IS NULL OR
                            length(TargetClickableUrl) <= 4096),
+                SourceAdultContent INTEGER NULL
+                    CHECK (SourceAdultContent IS NULL OR
+                           SourceAdultContent IN (0, 1)),
+                TargetAdultContent INTEGER NULL
+                    CHECK (TargetAdultContent IS NULL OR
+                           TargetAdultContent IN (0, 1)),
                 ProviderRequirementId TEXT NULL
                     CHECK (ProviderRequirementId IS NULL OR
                            length(ProviderRequirementId) <= 512),
@@ -286,5 +292,19 @@ internal static class CatalogDatabaseSchema
             """;
         await command.ExecuteNonQueryAsync(cancellationToken)
             .ConfigureAwait(false);
+        await EnsureColumnAsync(
+            connection,
+            transaction,
+            "NexusRequirementObservations",
+            "SourceAdultContent",
+            "INTEGER NULL CHECK (SourceAdultContent IS NULL OR SourceAdultContent IN (0, 1))",
+            cancellationToken).ConfigureAwait(false);
+        await EnsureColumnAsync(
+            connection,
+            transaction,
+            "NexusRequirementObservations",
+            "TargetAdultContent",
+            "INTEGER NULL CHECK (TargetAdultContent IS NULL OR TargetAdultContent IN (0, 1))",
+            cancellationToken).ConfigureAwait(false);
     }
 }

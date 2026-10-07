@@ -49,7 +49,8 @@ public sealed record NexusRequirementLocalState(
 
 public sealed record NexusRequirementProjectedEdge(
     NexusModRequirementEdge Edge,
-    NexusRequirementLocalState LocalState);
+    NexusRequirementLocalState LocalState,
+    NexusAdultContentAccess ContentAccess = NexusAdultContentAccess.Normal);
 
 public sealed record NexusRequirementTraversalProjection(
     NexusRequirementSnapshotRecord? State,

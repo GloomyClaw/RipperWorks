@@ -401,19 +401,33 @@
                                                                        TextWrapping="Wrap"
                                                                        Foreground="{DynamicResource TextPrimaryBrush}" />
 
-                                                            <Border Grid.Column="1"
-                                                                    Background="{DynamicResource CardBrush}"
-                                                                    BorderBrush="{DynamicResource BorderBrush}"
-                                                                    BorderThickness="1"
-                                                                    CornerRadius="2"
-                                                                    Padding="4,1"
-                                                                    Margin="4,0,0,0"
-                                                                    VerticalAlignment="Top">
-                                                                <TextBlock Text="{Binding LocalStatusText}"
-                                                                           FontSize="10"
-                                                                           FontWeight="SemiBold"
-                                                                           Foreground="{DynamicResource AccentBrush}" />
-                                                            </Border>
+                                                            <StackPanel Grid.Column="1"
+                                                                        Orientation="Horizontal"
+                                                                        VerticalAlignment="Top">
+                                                                <Border Background="{DynamicResource CardBrush}"
+                                                                        BorderBrush="{DynamicResource BorderBrush}"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="2"
+                                                                        Padding="4,1"
+                                                                        Margin="4,0,0,0"
+                                                                        Visibility="{Binding HasAdultIndicator, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                                    <TextBlock Text="{Binding AdultIndicatorText}"
+                                                                               FontSize="10"
+                                                                               FontWeight="Bold"
+                                                                               Foreground="{DynamicResource AccentBrush}" />
+                                                                </Border>
+                                                                <Border Background="{DynamicResource CardBrush}"
+                                                                        BorderBrush="{DynamicResource BorderBrush}"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="2"
+                                                                        Padding="4,1"
+                                                                        Margin="4,0,0,0">
+                                                                    <TextBlock Text="{Binding LocalStatusText}"
+                                                                               FontSize="10"
+                                                                               FontWeight="SemiBold"
+                                                                               Foreground="{DynamicResource AccentBrush}" />
+                                                                </Border>
+                                                            </StackPanel>
                                                         </Grid>
 
                                                         <TextBlock Grid.Row="1"

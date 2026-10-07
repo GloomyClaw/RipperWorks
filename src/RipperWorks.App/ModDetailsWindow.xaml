@@ -714,10 +714,16 @@
                                                         <ColumnDefinition Width="Auto" />
                                                     </Grid.ColumnDefinitions>
                                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Name}"
-                                                                   TextTrimming="CharacterEllipsis"
-                                                                   ToolTip="{Binding Name}"
-                                                                   FontWeight="Medium" />
+                                                         <TextBlock Text="{Binding Name}"
+                                                                    TextTrimming="CharacterEllipsis"
+                                                                    ToolTip="{Binding Name}"
+                                                                    FontWeight="Medium" />
+                                                        <TextBlock Text="{Binding AdultContentBadge}"
+                                                                   Foreground="{DynamicResource AccentBrush}"
+                                                                   FontSize="10"
+                                                                   FontWeight="Bold"
+                                                                   Visibility="{Binding HasAdultContentBadge,
+                                                                                        Converter={StaticResource BooleanToVisibilityConverter}}" />
                                                         <TextBlock Text="{Binding Notes}"
                                                                    TextTrimming="CharacterEllipsis"
                                                                    ToolTip="{Binding Notes}"
@@ -826,10 +832,16 @@
                                                         <ColumnDefinition Width="Auto" />
                                                     </Grid.ColumnDefinitions>
                                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                        <TextBlock Text="{Binding Name}"
-                                                                   TextTrimming="CharacterEllipsis"
-                                                                   ToolTip="{Binding Name}"
-                                                                   FontWeight="Medium" />
+                                                         <TextBlock Text="{Binding Name}"
+                                                                    TextTrimming="CharacterEllipsis"
+                                                                    ToolTip="{Binding Name}"
+                                                                    FontWeight="Medium" />
+                                                        <TextBlock Text="{Binding AdultContentBadge}"
+                                                                   Foreground="{DynamicResource AccentBrush}"
+                                                                   FontSize="10"
+                                                                   FontWeight="Bold"
+                                                                   Visibility="{Binding HasAdultContentBadge,
+                                                                                        Converter={StaticResource BooleanToVisibilityConverter}}" />
                                                         <TextBlock Text="{Binding Notes}"
                                                                    TextTrimming="CharacterEllipsis"
                                                                    ToolTip="{Binding Notes}"

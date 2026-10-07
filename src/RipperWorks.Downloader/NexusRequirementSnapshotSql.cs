@@ -107,6 +107,7 @@ internal static class NexusRequirementSnapshotSql
                 TargetGameId, TargetModId,
                 SourceDisplayName, SourceProviderUrl, SourceClickableUrl,
                 TargetDisplayName, TargetProviderUrl, TargetClickableUrl,
+                SourceAdultContent, TargetAdultContent,
                 ProviderRequirementId, Notes)
             VALUES (
                 $ownerGame, $ownerMod, $traversal,
@@ -115,6 +116,7 @@ internal static class NexusRequirementSnapshotSql
                 $targetGame, $targetMod,
                 $sourceName, $sourceUrl, $sourceClickable,
                 $targetName, $targetUrl, $targetClickable,
+                $sourceAdult, $targetAdult,
                 $providerId, $notes);
             """;
         command.Parameters.AddWithValue("$ownerGame", owner.QueriedMod.GameId);
@@ -159,6 +161,14 @@ internal static class NexusRequirementSnapshotSql
             command,
             "$targetClickable",
             nexusTarget?.ClickableUrl ?? externalTarget?.ClickableUrl);
+        AddAdultContentParameter(
+            command,
+            "$sourceAdult",
+            edge.SourceAdultContent);
+        AddAdultContentParameter(
+            command,
+            "$targetAdult",
+            edge.TargetAdultContent);
         AddBoundText(
             command,
             "$providerId",
@@ -282,6 +292,7 @@ internal static class NexusRequirementSnapshotSql
                    SourceDisplayName, SourceProviderUrl,
                    SourceClickableUrl, TargetDisplayName,
                    TargetProviderUrl, TargetClickableUrl,
+                   SourceAdultContent, TargetAdultContent,
                    ProviderRequirementId, Notes
             FROM NexusRequirementObservations
             WHERE OwnerGameId = $game AND OwnerModId = $mod
@@ -322,6 +333,7 @@ internal static class NexusRequirementSnapshotSql
                    SourceDisplayName, SourceProviderUrl,
                    SourceClickableUrl, TargetDisplayName,
                    TargetProviderUrl, TargetClickableUrl,
+                   SourceAdultContent, TargetAdultContent,
                    ProviderRequirementId, Notes,
                    OwnerGameId, OwnerModId, Traversal
             FROM NexusRequirementObservations
@@ -339,8 +351,8 @@ internal static class NexusRequirementSnapshotSql
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             var owner = new NexusRequirementSnapshotOwner(
-                new(reader.GetInt64(15), reader.GetInt64(16)),
-                (NexusRequirementTraversal)reader.GetInt32(17));
+                new(reader.GetInt64(17), reader.GetInt64(18)),
+                (NexusRequirementTraversal)reader.GetInt32(19));
             edges.Add(ReadObservation(reader, owner));
         }
         return edges.AsReadOnly();
@@ -382,9 +394,11 @@ internal static class NexusRequirementSnapshotSql
             source,
             target,
             sourceMetadata,
-            GetNullableString(reader, 13),
-            GetNullableString(reader, 14),
-            owner.Traversal);
+            GetNullableString(reader, 15),
+            GetNullableString(reader, 16),
+            owner.Traversal,
+            ReadAdultContent(reader, 13),
+            ReadAdultContent(reader, 14));
     }
 
     private static void AddOwnerParameters(
@@ -416,6 +430,35 @@ internal static class NexusRequirementSnapshotSql
             serialized is not null && serialized.Length <= UrlLimit
                 ? serialized
                 : (object)DBNull.Value);
+    }
+
+    private static void AddAdultContentParameter(
+        SqliteCommand command,
+        string parameter,
+        NexusAdultContentClassification classification)
+    {
+        object value = classification switch
+        {
+            NexusAdultContentClassification.NonAdult => 0,
+            NexusAdultContentClassification.Adult => 1,
+            _ => DBNull.Value
+        };
+        command.Parameters.AddWithValue(parameter, value);
+    }
+
+    private static NexusAdultContentClassification ReadAdultContent(
+        SqliteDataReader reader,
+        int ordinal)
+    {
+        if (reader.IsDBNull(ordinal))
+            return NexusAdultContentClassification.Unknown;
+        return reader.GetInt32(ordinal) switch
+        {
+            0 => NexusAdultContentClassification.NonAdult,
+            1 => NexusAdultContentClassification.Adult,
+            _ => throw new InvalidDataException(
+                "Persisted Nexus adult-content classification is invalid.")
+        };
     }
 
     internal static string? Bound(string? value, int maximumLength)

@@ -48,7 +48,10 @@ public sealed class NexusRequirementModuleHost :
                 _organizer,
                 _downloader),
             modernClient: v3Client,
-            downloads: _downloads);
+            downloads: _downloads,
+            contentMetadataClient: new NexusModContentMetadataClient(_httpClient),
+            adultContentPolicy: new NexusAdultContentAccessPolicy(
+                UnknownNexusAdultContentPermissionProvider.Instance));
         _started = true;
         return Task.CompletedTask;
     }

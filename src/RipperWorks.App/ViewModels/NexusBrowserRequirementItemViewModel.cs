@@ -22,12 +22,19 @@ public sealed class NexusBrowserRequirementItemViewModel : ObservableObject
     {
         Edge = projectedEdge.Edge;
         LocalState = projectedEdge.LocalState;
+        ContentAccess = projectedEdge.ContentAccess;
         _localization = localization ?? throw new ArgumentNullException(nameof(localization));
         _requestNavigate = requestNavigate ?? throw new ArgumentNullException(nameof(requestNavigate));
         _relationsService = relationsService;
         _requestNavigateDownloads = requestNavigateDownloads;
 
-        if (Edge.ObservedThrough == NexusRequirementTraversal.ForwardRequirements)
+        if (IsContentRestricted)
+        {
+            IsExternal = Edge.Target is NexusExternalRequirementTarget;
+            DisplayName = RestrictedTitle();
+            Notes = RestrictedDescription();
+        }
+        else if (Edge.ObservedThrough == NexusRequirementTraversal.ForwardRequirements)
         {
             if (Edge.Target is NexusModRequirementTarget modTarget)
             {
@@ -74,15 +81,21 @@ public sealed class NexusBrowserRequirementItemViewModel : ObservableObject
 
     public NexusModRequirementEdge Edge { get; }
     public NexusRequirementLocalState LocalState { get; private set; }
+    public NexusAdultContentAccess ContentAccess { get; }
     public long? NexusModId { get; }
     public long? GameId { get; }
     public string DisplayName { get; private set; }
-    public string? Notes { get; }
+    public string? Notes { get; private set; }
     public bool IsExternal { get; }
+    public bool IsContentRestricted => ContentAccess.IsRestricted();
+    public bool HasAdultIndicator =>
+        ContentAccess == NexusAdultContentAccess.AdultAllowed;
+    public string AdultIndicatorText => _localization.Get("NexusAdultBadge");
 
     public bool HasNotes => !string.IsNullOrWhiteSpace(Notes);
 
     public bool CanOpenInNexus =>
+        !IsContentRestricted &&
         NexusModId is > 0 &&
         GameId == NexusGameIdentityBridge.Cyberpunk2077NexusGameId;
 
@@ -90,6 +103,7 @@ public sealed class NexusBrowserRequirementItemViewModel : ObservableObject
         _isAddedToDownloads || LocalState.Availability == NexusRequirementLocalAvailability.InDownloads;
 
     public bool CanAddToDownloads =>
+        !IsContentRestricted &&
         !IsExternal &&
         NexusModId.HasValue &&
         GameId.HasValue &&
@@ -97,6 +111,7 @@ public sealed class NexusBrowserRequirementItemViewModel : ObservableObject
         LocalState.Availability == NexusRequirementLocalAvailability.Missing;
 
     public bool CanOpenInDownloads =>
+        !IsContentRestricted &&
         !IsExternal &&
         NexusModId.HasValue &&
         GameId.HasValue &&
@@ -108,7 +123,9 @@ public sealed class NexusBrowserRequirementItemViewModel : ObservableObject
         ? _localization.Get("NexusBrowserPanelOpenInDownloads")
         : _localization.Get("NexusBrowserPanelAddToDownloads");
 
-    public string LocalStatusText => IsInDownloader
+    public string LocalStatusText => IsContentRestricted
+        ? _localization.Get("NexusContentRestrictedStatus")
+        : IsInDownloader
         ? _localization.Get("NexusBrowserPanelAddedToDownloads")
         : (LocalState.Availability switch
         {
@@ -204,7 +221,12 @@ public sealed class NexusBrowserRequirementItemViewModel : ObservableObject
 
     public void RefreshLocalization()
     {
-        if (Edge.ObservedThrough == NexusRequirementTraversal.ForwardRequirements)
+        if (IsContentRestricted)
+        {
+            DisplayName = RestrictedTitle();
+            Notes = RestrictedDescription();
+        }
+        else if (Edge.ObservedThrough == NexusRequirementTraversal.ForwardRequirements)
         {
             if (Edge.Target is NexusModRequirementTarget modTarget)
             {
@@ -225,8 +247,21 @@ public sealed class NexusBrowserRequirementItemViewModel : ObservableObject
         }
 
         OnPropertyChanged(nameof(DisplayName));
+        OnPropertyChanged(nameof(Notes));
+        OnPropertyChanged(nameof(HasNotes));
         OnPropertyChanged(nameof(LocalStatusText));
         OnPropertyChanged(nameof(OpenOnNexusText));
         OnPropertyChanged(nameof(DownloaderActionText));
+        OnPropertyChanged(nameof(AdultIndicatorText));
     }
+
+    private string RestrictedTitle() => _localization.Get(
+        ContentAccess == NexusAdultContentAccess.AdultRestricted
+            ? "NexusAdultRestrictedTitle"
+            : "NexusContentUnavailableTitle");
+
+    private string RestrictedDescription() => _localization.Get(
+        ContentAccess == NexusAdultContentAccess.AdultRestricted
+            ? "NexusAdultRestrictedDescription"
+            : "NexusContentUnavailableDescription");
 }

@@ -1,12 +1,12 @@
-﻿# RipperWorks
+# RipperWorks
 
 Windows desktop mod manager for Cyberpunk 2077.
 
 > **Status: Nexus Mods API/OAuth review — pre-public release**
 
-This repository contains the complete application source code for RipperWorks v1.0.2.
+This repository contains the complete application source code for RipperWorks v1.0.3.
 
-The application source under `src/` corresponds to the reviewed RipperWorks v1.0.2 release source. Internal development planning documents, agent instructions, test infrastructure, review tooling, and other non-product development artifacts are intentionally excluded from this public repository.
+The application source under `src/` corresponds to RipperWorks v1.0.3. Internal development planning documents, agent instructions, test infrastructure, review tooling, and other non-product development artifacts are intentionally excluded from this public repository.
 
 ## Building
 
@@ -25,7 +25,7 @@ dotnet build .\RipperWorks.sln -c Release
 
 RipperWorks includes Nexus Mods integration for metadata, requirements/dependencies, update checking, NXM handling, and download workflows.
 
-Support for user-supplied Nexus Personal API Keys has been removed from v1.0.2 as requested by Nexus Mods during API review.
+Support for user-supplied Nexus Personal API Keys has been removed from v1.0.3 as requested by Nexus Mods during API review.
 
 Authenticated Nexus functionality that requires the future OAuth integration is temporarily unavailable pending progression of the Nexus Mods OAuth registration process.
 

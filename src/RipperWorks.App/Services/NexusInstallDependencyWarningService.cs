@@ -173,6 +173,20 @@ public sealed class NexusInstallDependencyWarningService
         NexusRequirementProjectedEdge edge,
         string sourceModDisplayName)
     {
+        if (edge.ContentAccess.IsRestricted())
+        {
+            var adult = edge.ContentAccess ==
+                NexusAdultContentAccess.AdultRestricted;
+            return new(
+                TargetName: _localization.Get(adult
+                    ? "NexusAdultRestrictedTitle"
+                    : "NexusContentUnavailableTitle"),
+                Availability: edge.LocalState.Availability,
+                AvailabilityText: _localization.Get(
+                    "NexusContentRestrictedStatus"),
+                SourceModDisplayName: sourceModDisplayName);
+        }
+
         var targetName = edge.Edge.Target switch
         {
             NexusModRequirementTarget targetMod => targetMod.DisplayName ??

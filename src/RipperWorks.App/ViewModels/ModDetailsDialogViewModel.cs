@@ -800,13 +800,16 @@ public sealed class ModDetailsDialogViewModel : ObservableObject, IDisposable
                 if (matchedOutgoingLocal.Contains(i))
                     continue;
                 var local = localOutgoingByTarget[i];
+                var canMergeProvenance =
+                    local.Local.Relation.Source == PackageRelationSource.DetectedOverlap &&
+                    local.Local.Relation.IsConfirmed;
                 var matchesLibMod = nexusTargetLibModId is not null &&
                     local.TargetLibModId is not null &&
                     nexusTargetLibModId == local.TargetLibModId;
                 var matchesNexusId = nexusTargetIdentity.HasValue &&
                     local.TargetNexusId.HasValue &&
                     nexusTargetIdentity.Value == local.TargetNexusId.Value;
-                if (matchesLibMod || matchesNexusId)
+                if (canMergeProvenance && (matchesLibMod || matchesNexusId))
                 {
                     matchIndex = i;
                     break;
@@ -910,12 +913,15 @@ public sealed class ModDetailsDialogViewModel : ObservableObject, IDisposable
                 if (matchedIncomingLocal.Contains(i))
                     continue;
                 var local = localIncomingBySource[i];
+                var canMergeProvenance =
+                    local.Local.Relation.Source == PackageRelationSource.DetectedOverlap &&
+                    local.Local.Relation.IsConfirmed;
                 var matchesLibMod = nexusSourceLibModId is not null &&
                     local.SourceLibModId is not null &&
                     nexusSourceLibModId == local.SourceLibModId;
                 var matchesNexusId = local.SourceNexusId.HasValue &&
                     nexusSourceIdentity == local.SourceNexusId.Value;
-                if (matchesLibMod || matchesNexusId)
+                if (canMergeProvenance && (matchesLibMod || matchesNexusId))
                 {
                     matchIndex = i;
                     break;
@@ -1611,6 +1617,8 @@ public sealed class ModRelationRowViewModel
     {
         _dialog = dialog;
         _localization = localization;
+        ContentAccess = NexusAdultContentAccess.Normal;
+        AdultContentBadge = null;
         Relation = relation;
         if (targetArchive is not null)
         {
@@ -1690,6 +1698,7 @@ public sealed class ModRelationRowViewModel
         string? safeUrl,
         LibraryModId? targetLibraryModId,
         NexusModIdentity? targetNexusIdentity,
+        NexusAdultContentAccess contentAccess,
         bool isOutgoing,
         LocalizationService localization,
         ModDetailsDialogViewModel? dialog,
@@ -1707,15 +1716,26 @@ public sealed class ModRelationRowViewModel
         SafeUrl = safeUrl;
         TargetLibraryModId = targetLibraryModId;
         TargetNexusIdentity = targetNexusIdentity;
+        ContentAccess = contentAccess;
+        AdultContentBadge =
+            contentAccess == NexusAdultContentAccess.AdultAllowed
+                ? localization.Get("NexusAdultBadge")
+                : null;
+        var contentRestricted = contentAccess.IsRestricted();
 
-        CanOpenModDetails = availability is NexusRequirementLocalAvailability.Installed or NexusRequirementLocalAvailability.InLibrary;
+        CanOpenModDetails = !contentRestricted &&
+            availability is (
+                NexusRequirementLocalAvailability.Installed or
+                NexusRequirementLocalAvailability.InLibrary);
         OpenModDetailsCommand = new AsyncRelayCommand(async () =>
         {
             if (_dialog is not null)
                 await _dialog.OpenModDetailsForNexusIdentityAsync(TargetLibraryModId, TargetNexusIdentity);
         }, () => CanOpenModDetails);
 
-        CanOpenInDownloads = availability == NexusRequirementLocalAvailability.InDownloads && TargetNexusIdentity.HasValue;
+        CanOpenInDownloads = !contentRestricted &&
+            availability == NexusRequirementLocalAvailability.InDownloads &&
+            TargetNexusIdentity.HasValue;
         OpenInDownloadsCommand = new AsyncRelayCommand(() =>
         {
             if (_dialog is not null && TargetNexusIdentity.HasValue)
@@ -1723,7 +1743,8 @@ public sealed class ModRelationRowViewModel
             return Task.CompletedTask;
         }, () => CanOpenInDownloads);
 
-        CanOpenOnNexus = availability == NexusRequirementLocalAvailability.Missing &&
+        CanOpenOnNexus = !contentRestricted &&
+            availability == NexusRequirementLocalAvailability.Missing &&
             NexusBrowserNavigationPolicy.IsValidOpenNexusWebUrl(SafeUrl, out _);
         OpenOnNexusCommand = new AsyncRelayCommand(() =>
         {
@@ -1732,14 +1753,17 @@ public sealed class ModRelationRowViewModel
             return Task.CompletedTask;
         }, () => CanOpenOnNexus);
 
-        CanAddToDownloads = isOutgoing && availability == NexusRequirementLocalAvailability.Missing && TargetNexusIdentity.HasValue;
+        CanAddToDownloads = !contentRestricted && isOutgoing &&
+            availability == NexusRequirementLocalAvailability.Missing &&
+            TargetNexusIdentity.HasValue;
         AddToDownloadsCommand = new AsyncRelayCommand(async () =>
         {
             if (_dialog is not null)
                 await _dialog.AddToDownloadsAsync(this);
         }, () => CanAddToDownloads);
 
-        CanOpenExternalLink = availability == NexusRequirementLocalAvailability.External &&
+        CanOpenExternalLink = !contentRestricted &&
+            availability == NexusRequirementLocalAvailability.External &&
             !string.IsNullOrWhiteSpace(SafeUrl) &&
             (SafeUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || SafeUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
         OpenExternalLinkCommand = new AsyncRelayCommand(() =>
@@ -1770,7 +1794,7 @@ public sealed class ModRelationRowViewModel
             {
                 try { System.Windows.Clipboard.SetText(TargetNexusIdentity.Value.ModId.ToString(System.Globalization.CultureInfo.InvariantCulture)); } catch { }
             }
-        }, () => TargetNexusIdentity.HasValue);
+        }, () => !contentRestricted && TargetNexusIdentity.HasValue);
     }
 
     public static ModRelationRowViewModel FromNexus(
@@ -1780,15 +1804,20 @@ public sealed class ModRelationRowViewModel
         ModDetailsDialogViewModel? dialog = null,
         Func<Task>? onRemove = null)
     {
-        var name = outgoing
-            ? BuildForwardName(relation.Edge.Target, localization)
-            : FirstNonEmpty(
-                relation.Edge.SourceMetadata?.DisplayName,
-                relation.LocalState.DisplayName,
-                string.Format(
-                    localization.Get("NexusModFallback"),
-                    relation.Edge.Source.ModId));
-        var state = localization.Get(
+        var restricted = relation.ContentAccess.IsRestricted();
+        var name = restricted
+            ? RestrictedTitle(relation.ContentAccess, localization)
+            : outgoing
+                ? BuildForwardName(relation.Edge.Target, localization)
+                : FirstNonEmpty(
+                    relation.Edge.SourceMetadata?.DisplayName,
+                    relation.LocalState.DisplayName,
+                    string.Format(
+                        localization.Get("NexusModFallback"),
+                        relation.Edge.Source.ModId));
+        var state = restricted
+            ? localization.Get("NexusContentRestrictedStatus")
+            : localization.Get(
             relation.LocalState.Availability switch
             {
                 NexusRequirementLocalAvailability.Installed =>
@@ -1805,7 +1834,9 @@ public sealed class ModRelationRowViewModel
                     "Unknown Nexus relation availability.")
             });
 
-        string? safeUrl = outgoing
+        string? safeUrl = restricted
+            ? null
+            : outgoing
             ? (relation.Edge.Target is NexusModRequirementTarget nm
                 ? (nm.ClickableUrl?.ToString() ?? nm.ProviderUrl)
                 : (relation.Edge.Target is NexusExternalRequirementTarget ex
@@ -1813,18 +1844,24 @@ public sealed class ModRelationRowViewModel
                     : null))
             : (relation.Edge.SourceMetadata?.ClickableUrl?.ToString() ?? relation.Edge.SourceMetadata?.ProviderUrl);
 
-        NexusModIdentity? targetNexusIdentity = outgoing
-            ? NexusGameIdentityBridge.GetEffectiveTargetIdentity(relation.Edge.Target)
-            : relation.Edge.Source;
+        NexusModIdentity? targetNexusIdentity = restricted
+            ? null
+            : outgoing
+                ? NexusGameIdentityBridge.GetEffectiveTargetIdentity(
+                    relation.Edge.Target)
+                : relation.Edge.Source;
 
         return new(
             name,
             state,
-            relation.Edge.Notes,
+            restricted
+                ? RestrictedDescription(relation.ContentAccess, localization)
+                : relation.Edge.Notes,
             relation.LocalState.Availability,
             safeUrl,
-            relation.LocalState.LibraryModId,
+            restricted ? null : relation.LocalState.LibraryModId,
             targetNexusIdentity,
+            relation.ContentAccess,
             outgoing,
             localization,
             dialog,
@@ -1879,11 +1916,16 @@ public sealed class ModRelationRowViewModel
             throw new ArgumentException("At least one relation must be provided.");
         }
 
-        var name = targetArchive is not null
-            ? LibraryArchiveRowViewModel.BuildComponentDescriptor(
-                targetArchive.Package,
-                localization)
-            : (outgoing ? localRelation!.ToDisplayName : localRelation!.FromDisplayName);
+        var restricted = nexusRelation!.ContentAccess.IsRestricted();
+        var name = restricted
+            ? RestrictedTitle(nexusRelation.ContentAccess, localization)
+            : targetArchive is not null
+                ? LibraryArchiveRowViewModel.BuildComponentDescriptor(
+                    targetArchive.Package,
+                    localization)
+                : (outgoing
+                    ? localRelation!.ToDisplayName
+                    : localRelation!.FromDisplayName);
 
         var type = localization.Get(
             localRelation!.Relation.RelationType == PackageRelationType.AddOnOf
@@ -1901,13 +1943,17 @@ public sealed class ModRelationRowViewModel
         var archivePresent = outgoing
             ? localRelation.ToArchivePresent
             : localRelation.FromArchivePresent;
-        var stateText = state == PackageInstallationState.Installed
-            ? localization.Get("InstallationInstalled")
-            : archivePresent
-                ? localization.Get("InstallationNotInstalled")
-                : localization.Get("ModCardArchiveMissing");
+        var stateText = restricted
+            ? localization.Get("NexusContentRestrictedStatus")
+            : state == PackageInstallationState.Installed
+                ? localization.Get("InstallationInstalled")
+                : archivePresent
+                    ? localization.Get("InstallationNotInstalled")
+                    : localization.Get("ModCardArchiveMissing");
 
-        string? safeUrl = outgoing
+        string? safeUrl = restricted
+            ? null
+            : outgoing
             ? (nexusRelation!.Edge.Target is NexusModRequirementTarget nm
                 ? (nm.ClickableUrl?.ToString() ?? nm.ProviderUrl)
                 : (nexusRelation!.Edge.Target is NexusExternalRequirementTarget ex
@@ -1916,24 +1962,33 @@ public sealed class ModRelationRowViewModel
             : (nexusRelation!.Edge.SourceMetadata?.ClickableUrl?.ToString() ??
                nexusRelation!.Edge.SourceMetadata?.ProviderUrl);
 
-        NexusModIdentity? targetNexusIdentity = outgoing
-            ? NexusGameIdentityBridge.GetEffectiveTargetIdentity(
-                nexusRelation!.Edge.Target)
-            : nexusRelation!.Edge.Source;
+        NexusModIdentity? targetNexusIdentity = restricted
+            ? null
+            : outgoing
+                ? NexusGameIdentityBridge.GetEffectiveTargetIdentity(
+                    nexusRelation.Edge.Target)
+                : nexusRelation.Edge.Source;
 
-        var targetLibraryModId = nexusRelation!.LocalState.LibraryModId ??
-            targetArchive?.Package.LibraryModId;
+        var targetLibraryModId = restricted
+            ? null
+            : nexusRelation.LocalState.LibraryModId ??
+                targetArchive?.Package.LibraryModId;
 
         var removeAction = onRemoveLocal ?? onRemoveNexus;
 
         return new ModRelationRowViewModel(
             name,
             stateText,
-            nexusRelation.Edge.Notes,
+            restricted
+                ? RestrictedDescription(
+                    nexusRelation.ContentAccess,
+                    localization)
+                : nexusRelation.Edge.Notes,
             nexusRelation.LocalState.Availability,
             safeUrl,
             targetLibraryModId,
             targetNexusIdentity,
+            nexusRelation.ContentAccess,
             outgoing,
             localization,
             dialog,
@@ -1971,6 +2026,20 @@ public sealed class ModRelationRowViewModel
         return string.Join(", ", parts);
     }
 
+    private static string RestrictedTitle(
+        NexusAdultContentAccess access,
+        LocalizationService localization) => localization.Get(
+            access == NexusAdultContentAccess.AdultRestricted
+                ? "NexusAdultRestrictedTitle"
+                : "NexusContentUnavailableTitle");
+
+    private static string RestrictedDescription(
+        NexusAdultContentAccess access,
+        LocalizationService localization) => localization.Get(
+            access == NexusAdultContentAccess.AdultRestricted
+                ? "NexusAdultRestrictedDescription"
+                : "NexusContentUnavailableDescription");
+
     public PackageRelationView? Relation { get; internal set; }
     public string Name { get; }
     public string Type { get; internal set; }
@@ -1982,7 +2051,13 @@ public sealed class ModRelationRowViewModel
     public string? SafeUrl { get; }
     public LibraryModId? TargetLibraryModId { get; }
     public NexusModIdentity? TargetNexusIdentity { get; }
-    public bool HasTargetNexusIdentity => TargetNexusIdentity.HasValue;
+    public NexusAdultContentAccess ContentAccess { get; }
+    public bool IsContentRestricted => ContentAccess.IsRestricted();
+    public string? AdultContentBadge { get; }
+    public bool HasAdultContentBadge =>
+        !string.IsNullOrWhiteSpace(AdultContentBadge);
+    public bool HasTargetNexusIdentity =>
+        !IsContentRestricted && TargetNexusIdentity.HasValue;
 
     public bool CanRemove { get; }
     public AsyncRelayCommand RemoveCommand { get; }

@@ -9,6 +9,8 @@ public sealed class NexusRequirementSyncService :
 {
     private readonly INexusGraphQlRequirementClient _client;
     private readonly INexusModernRequirementClient? _modernClient;
+    private readonly INexusModContentMetadataClient? _contentMetadataClient;
+    private readonly NexusAdultContentAccessPolicy _adultContentPolicy;
     private readonly NexusRequirementSnapshotStore _store;
     private readonly NexusRequirementAvailabilityResolver _availability;
     private readonly Func<DateTimeOffset> _utcNow;
@@ -25,7 +27,9 @@ public sealed class NexusRequirementSyncService :
         NexusRequirementAvailabilityResolver availability,
         Func<DateTimeOffset>? utcNow = null,
         Func<IDownloadsModuleBoundary?>? downloads = null,
-        INexusModernRequirementClient? modernClient = null)
+        INexusModernRequirementClient? modernClient = null,
+        INexusModContentMetadataClient? contentMetadataClient = null,
+        NexusAdultContentAccessPolicy? adultContentPolicy = null)
     {
         _client = client ?? throw new ArgumentNullException(nameof(client));
         _store = store ?? throw new ArgumentNullException(nameof(store));
@@ -34,6 +38,10 @@ public sealed class NexusRequirementSyncService :
         _utcNow = utcNow ?? (() => DateTimeOffset.UtcNow);
         _downloads = downloads;
         _modernClient = modernClient;
+        _contentMetadataClient = contentMetadataClient;
+        _adultContentPolicy = adultContentPolicy ??
+            new NexusAdultContentAccessPolicy(
+                UnknownNexusAdultContentPermissionProvider.Instance);
     }
 
     public Task<NexusRequirementSyncResult> RefreshAsync(
@@ -277,9 +285,12 @@ public sealed class NexusRequirementSyncService :
 
             if (modernResult.Outcome == NexusModernRequirementOutcome.Complete && modernResult.Snapshot != null)
             {
+                var enrichedSnapshot = await EnrichAdultContentAsync(
+                    modernResult.Snapshot,
+                    cancellationToken).ConfigureAwait(false);
                 lock (_ambiguousMods) { _ambiguousMods.Remove(owner.QueriedMod); }
-                await _store.SaveCompleteSnapshotAsync(modernResult.Snapshot, attemptedAt, cancellationToken).ConfigureAwait(false);
-                var freshKeys = modernResult.Snapshot.Edges
+                await _store.SaveCompleteSnapshotAsync(enrichedSnapshot, attemptedAt, cancellationToken).ConfigureAwait(false);
+                var freshKeys = enrichedSnapshot.Edges
                     .Where(edge => edge.CanonicalKey.HasValue)
                     .Select(edge => edge.CanonicalKey!.Value)
                     .Distinct()
@@ -301,12 +312,15 @@ public sealed class NexusRequirementSyncService :
 
         if (query.IsComplete && query.Snapshot?.Owner == owner)
         {
+            var enrichedSnapshot = await EnrichAdultContentAsync(
+                query.Snapshot,
+                cancellationToken).ConfigureAwait(false);
             lock (_ambiguousMods) { _ambiguousMods.Remove(owner.QueriedMod); }
             await _store.SaveCompleteSnapshotAsync(
-                query.Snapshot,
+                enrichedSnapshot,
                 attemptedAt,
                 cancellationToken).ConfigureAwait(false);
-            var freshKeys = query.Snapshot.Edges
+            var freshKeys = enrichedSnapshot.Edges
                 .Where(edge => edge.CanonicalKey.HasValue)
                 .Select(edge => edge.CanonicalKey!.Value)
                 .Distinct()
@@ -434,7 +448,7 @@ public sealed class NexusRequirementSyncService :
         return new(record, relations, filtered);
     }
 
-    private static NexusRequirementTraversalProjection Project(
+    private NexusRequirementTraversalProjection Project(
         PreparedProjection prepared,
         IReadOnlyDictionary<NexusModIdentity, NexusRequirementLocalState> states,
         bool isForward,
@@ -453,14 +467,83 @@ public sealed class NexusRequirementSyncService :
                     continue;
                 }
 
-                relations.Add(new(item.Edge, state));
+                relations.Add(new(
+                    item.Edge,
+                    state,
+                    _adultContentPolicy.Evaluate(item.Edge, isForward)));
             }
             else if (isForward)
             {
-                relations.Add(new(item.Edge, new(NexusRequirementLocalAvailability.External, null)));
+                relations.Add(new(
+                    item.Edge,
+                    new(NexusRequirementLocalAvailability.External, null),
+                    _adultContentPolicy.Evaluate(item.Edge, isForward)));
             }
         }
         return new(prepared.State, relations, prepared.FilteredSelfRelationCount, isSourceAmbiguous);
+    }
+
+    private async Task<NexusRequirementSnapshot> EnrichAdultContentAsync(
+        NexusRequirementSnapshot snapshot,
+        CancellationToken cancellationToken)
+    {
+        var identities = snapshot.Edges
+            .SelectMany(edge =>
+            {
+                var target = NexusGameIdentityBridge.GetEffectiveTargetIdentity(
+                    edge.Target);
+                return target is { } targetIdentity
+                    ? new[] { edge.Source, targetIdentity }
+                    : new[] { edge.Source };
+            })
+            .Distinct()
+            .ToArray();
+        IReadOnlyDictionary<NexusModIdentity, NexusAdultContentClassification>
+            classifications =
+                new Dictionary<NexusModIdentity, NexusAdultContentClassification>();
+
+        if (_contentMetadataClient is not null && identities.Length > 0)
+        {
+            try
+            {
+                classifications = await _contentMetadataClient
+                    .GetAdultContentClassificationsAsync(
+                        identities,
+                        cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+                when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch
+            {
+                // Edge discovery is authoritative. Metadata failure stays Unknown.
+            }
+        }
+
+        var enriched = snapshot.Edges.Select(edge =>
+        {
+            classifications.TryGetValue(
+                edge.Source,
+                out var sourceClassification);
+            var targetClassification =
+                NexusAdultContentClassification.Unknown;
+            var targetIdentity = NexusGameIdentityBridge
+                .GetEffectiveTargetIdentity(edge.Target);
+            if (targetIdentity is { } identity)
+            {
+                classifications.TryGetValue(
+                    identity,
+                    out targetClassification);
+            }
+            return edge with
+            {
+                SourceAdultContent = sourceClassification,
+                TargetAdultContent = targetClassification
+            };
+        });
+        return new NexusRequirementSnapshot(snapshot.Owner, enriched);
     }
 
     private sealed class InFlightRefresh

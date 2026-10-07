@@ -17,6 +17,13 @@ public enum NexusRequirementTargetKind
     External = 1
 }
 
+public enum NexusAdultContentClassification
+{
+    Unknown = 0,
+    NonAdult = 1,
+    Adult = 2
+}
+
 public abstract record NexusRequirementTarget
 {
     public abstract NexusRequirementTargetKind Kind { get; }
@@ -57,7 +64,11 @@ public sealed record NexusModRequirementEdge(
     NexusModRequirementEndpointMetadata? SourceMetadata,
     string? ProviderRequirementId,
     string? Notes,
-    NexusRequirementTraversal ObservedThrough)
+    NexusRequirementTraversal ObservedThrough,
+    NexusAdultContentClassification SourceAdultContent =
+        NexusAdultContentClassification.Unknown,
+    NexusAdultContentClassification TargetAdultContent =
+        NexusAdultContentClassification.Unknown)
 {
     public NexusRequirementCanonicalKey? CanonicalKey =>
         Target is NexusModRequirementTarget nexusTarget
